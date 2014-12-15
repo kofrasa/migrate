@@ -1,6 +1,6 @@
 # migrate
 
-A generic simple database migration tool eschewing boilerplate and framework dependencies
+A simple generic database migration tool eschewing boilerplate and framework dependencies
 
 
 ## install
@@ -32,7 +32,7 @@ optional arguments:
                         using the "create" command (default: last revision)
   -m MESSAGE            message description for creating new migrations with
                         "create" command
-  -u USER               database user name (default: "francis")
+  -u USER               database user name (default: login_name)
   -p                    prompt for database password. if not supplied assumes
                         no password unless read from config
   --host HOST           database server host (default: "localhost")

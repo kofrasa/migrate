@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-A generic simple database migration tool for explicitly managing migrations
+A simple generic database migration tool
 """
 
 import os
