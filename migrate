@@ -64,7 +64,7 @@ class Migrate(object):
     def _create(self):
         """Create the migration files in the target revision folder
         """
-        assert self._message, "Need to supply a message"
+        assert self._message, "Need to supply a message for command \"create\""
         if not self._rev_folders:
             # we start from revision 1
             self._rev_folders.append("1")
