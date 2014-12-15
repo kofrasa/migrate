@@ -1,0 +1,247 @@
+#!/usr/bin/env python
+"""
+A generic simple database migration tool for explicitly managing migrations
+"""
+
+import os
+import sys
+import argparse
+import glob
+import subprocess
+from ConfigParser import SafeConfigParser
+from datetime import datetime
+
+PROGRAM = "migrate"
+DESC = "Manage database migrations explicitly using SQL scripts"
+COMMANDS = {
+    'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
+    'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
+    'sqlite3': "sqlite3 {database}"
+}
+PORTS = dict(postgres=5432, mysql=3306)
+
+
+class Migrate(object):
+    """A simple database migration helper
+    """
+
+    def __init__(self, config):
+        if config.get('file'):
+            # read ini configuration
+            parser = SafeConfigParser()
+            parser.read(config['file'])
+            env = config.get('env', 'default')
+            for name in ('engine', 'user', 'password', 'migration_folder', 'host', 'port', 'database', 'verbose'):
+                if parser.has_option(env, name):
+                    value = parser.get(env, name)
+                    if not value:
+                        continue
+                    config[name] = value
+                    if name == 'migration_folder':
+                        config['path'] = config[name]
+
+        # assign configuration
+        self._migration_folder = os.path.abspath(config.get('path'))
+        self._host = config.get('host')
+        self._port = config.get('port')
+        self._user = config.get('user')
+        self._password = config.get('password')
+        self._database = config.get('database')
+        self._rev = config.get('rev')
+        self._command = config.get('command')
+        self._message = config.get('message')
+        self._engine = config.get('engine')
+        self._verbose = config.get('verbose')
+
+        assert os.path.exists(self._migration_folder) and os.path.isdir(self._migration_folder), \
+            "Migration folder does not exist: %s" % self._migration_folder
+        current_dir = os.path.abspath(os.getcwd())
+        os.chdir(self._migration_folder)
+        # cache ordered list of the names of all revision folders
+        self._rev_folders = map(str, sorted(map(int, filter(lambda x: x.isdigit(), glob.glob("*")))))
+        os.chdir(current_dir)
+
+    def _create(self):
+        """Create the migration files in the target revision folder
+        """
+        assert self._message, "Need to supply a message"
+        if not self._rev_folders:
+            # we start from revision 1
+            self._rev_folders.append("1")
+
+        # get the migration folder
+        rev_folder = self._rev_folders[-1]
+        if not os.path.exists(rev_folder):
+            os.mkdir(rev_folder)
+        else:
+            count = len(glob.glob(os.path.join(self._migration_folder, rev_folder, "*")))
+            # create next revision folder if needed
+            if count and self._rev is not None and int(self._rev) == 0:
+                rev_folder = str(int(rev_folder) + 1)
+                os.mkdir(rev_folder)
+                self._rev_folders.append(rev_folder)
+
+        # format file name
+        filename = "%s.%s" % (
+            datetime.utcnow().strftime("%Y%m%d%H%M%S"),
+            '-'.join([s.lower() for s in self._message.split(' ') if s.strip()])
+        )
+        # create the migration files
+        print "Creating files: "
+        for s in ('up', 'down'):
+            file_path = "%s.%s.sql" % (filename, s)
+            with open(os.path.join(rev_folder, file_path), 'a+') as w:
+                w.write("-- %s: %s" % (s.upper(), self._message))
+                print file_path
+
+    def _migrate(self, rev=None):
+        """Run migration for the latest revision
+        """
+        if not rev and not self._rev_folders:
+            assert self._rev_folders, "No migration revision exist"
+        rev = rev or self._rev_folders[-1]
+        print "Migrating revision %s" % rev
+        sql_files = [s for s in glob.glob(os.path.join(self._migration_folder, rev, "*")) if s.endswith(".up.sql")]
+        sql_files.sort()
+        self._exec(sql_files)
+        print "Done! Revision %s migrated successfully" % rev
+
+    def _rollback(self, rev=None):
+        """Rollback the migration for the last revision
+        """
+        if not rev and not self._rev_folders:
+            assert self._rev_folders, "No migration revision exist"
+        rev = rev or self._rev_folders[-1]
+        print "Rolling revision %s" % rev
+        sql_files = [s for s in glob.glob(os.path.join(self._migration_folder, rev, "*")) if s.endswith(".down.sql")]
+        sql_files.sort(reverse=True)
+        self._exec(sql_files)
+        print "Done! Revision %s rolled back successfully" % rev
+
+    def _reset(self):
+        """Rollback all migrations
+        """
+        for rev in reversed(self._rev_folders):
+            self._rollback(rev)
+
+    def _refresh(self):
+        """Rollback all migrations and run them all again
+        """
+        self._reset()
+        for rev in self._rev_folders:
+            self._migrate(rev)
+
+    def _exec(self, files):
+        password = None
+        if self._password and self._password is True:
+            import getpass
+
+            password = getpass.getpass()
+
+        cmd = COMMANDS[self._engine].format(
+            host=self._host,
+            user=self._user,
+            database=self._database,
+            port=self._port or PORTS.get(self._engine, None)
+        )
+        func = globals()["exec_%s" % self._engine]
+        try:
+            assert callable(func), "No exec function found for " + self._engine
+            cmd_name = cmd.split()[0]
+            cmd_path = subprocess.check_output(["which", cmd_name]).strip()
+            assert os.path.exists(cmd_path), "No %s command found on path" % cmd_name
+            for f in files:
+                if self._verbose:
+                    print "Applying: %s" % os.path.basename(f)
+                func(cmd, f, password)
+        except Exception, e:
+            print >> sys.stderr, e.message
+
+    def run(self):
+        try:
+            {
+                'create': lambda: self._create(),
+                'migrate': lambda: self._migrate(),
+                'rollback': lambda: self._rollback(),
+                'reset': lambda: self._reset(),
+                'refresh': lambda: self._refresh()
+            }.get(self._command)()
+        except Exception as e:
+            print >> sys.stderr, e.message
+
+
+def exec_mysql(cmd, filename, password=None):
+    if password:
+        cmd = cmd + ' -p' + password
+    with open(filename) as f:
+        return subprocess.call(cmd.split(), stdin=f)
+
+# reuse :)
+exec_sqlite3 = lambda a, b, c: exec_mysql(a, b, None)
+
+
+def exec_postgres(cmd, filename, password=None):
+    env_password = None
+    if password:
+        env_password = subprocess.check_output(['echo', '$PGPASSWORD'])
+        subprocess.call(['export', 'PGPASSWORD=' + password])
+    try:
+        return subprocess.call(cmd.split() + ['-f', filename])
+    finally:
+        if env_password:
+            subprocess.call(['export', 'PGPASSWORD=' + env_password])
+        else:
+            subprocess.call(['unset', 'PGPASSWORD'])
+
+
+def main():
+    login_name = os.getlogin()
+    migration_path = os.path.join(os.getcwd(), "migrations")
+
+    parser = argparse.ArgumentParser(PROGRAM, description=DESC)
+    parser.add_argument("-c", dest='command', default='create',
+                        choices=('create', 'migrate', 'rollback', 'reset', 'refresh'),
+                        help='command to run (default: "create")')
+    parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
+                        help="database engine (default: \"sqlite3\")")
+    parser.add_argument("-r", dest="rev", type=int,
+                        help="revision to use. specify \"0\" for the next revision if using the \"create\" command "
+                             "(default: last revision)")
+    parser.add_argument("-m", dest="message",
+                        help="message description for creating new migrations with \"create\" command")
+    parser.add_argument("-u", dest="user", default=login_name,
+                        help="database user name (default: \"%s\")" % login_name)
+    parser.add_argument("-p", dest="password", action='store_true', default=False,
+                        help="prompt for database password. "
+                             "if not supplied assumes no password unless read from config")
+    parser.add_argument("--host", default="localhost",
+                        help='database server host (default: "localhost")')
+    parser.add_argument("--port",
+                        help='server port (defaults: postgres=5432, mysql=3306)')
+    parser.add_argument("-db", dest="database", default=login_name,
+                        help="database name to use. specify a /path/to/file if using sqlite3")
+    parser.add_argument("--path", default=migration_path,
+                        help="path to the migration folder either absolute or relative to the current directory. "
+                             "default to migrations folder in current directory: \"%s\"" % migration_path)
+    parser.add_argument("-f", dest='file', metavar='CONFIG',
+                        help="configuration file in \".ini\" format. "
+                             "Sections represent configurations for different environments. Keys include "
+                             "(migration_folder, user, password, host, port, database, engine)")
+    parser.add_argument("--env", default='default',
+                        help="configuration environment. used only with config file as the given sections "
+                             "(default: \"default\")")
+    parser.add_argument("-v", dest="verbose", action='store_true', default=False,
+                        help="show verbose output")
+
+    config = {}
+    args = parser.parse_args()
+    for name in ('engine', 'command', 'rev', 'password', 'user', 'path', 'env',
+                 'host', 'port', 'database', 'file', 'message', 'verbose'):
+        config[name] = getattr(args, name)
+
+    m = Migrate(config)
+    m.run()
+
+
+if __name__ == '__main__':
+    main()
