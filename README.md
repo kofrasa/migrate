@@ -72,12 +72,12 @@ migrations//1:
 
 applying migrations
 ```sh
-$ ./migrate -e sqlite -c migrate -db /path/to/test.db
+$ ./migrate -e sqlite3 -c migrate -db /path/to/test.db
 ```
 
 rolling back
 ```sh
-$ ./migrate -e sqlite -c rollback -db /path/to/test.db
+$ ./migrate -e sqlite3 -c rollback -db /path/to/test.db
 ```
 
 running with sample configuration example: config.ini
