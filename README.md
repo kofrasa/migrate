@@ -105,7 +105,7 @@ $ ./migrate refresh -f config.ini --env prod
 ## commands
 | Command  | Description  |
 | :--------| :----------- |
-| new      | creates a new migration. specify "-r 0" for a new revision |
+| new      | add a new migration. specify "-r 0" for a new revision |
 | run      | Run the migration for the latest revision  |
 | rollback | Rollback the migration for the last revision |
 | reset    | Rollback all migrations |
