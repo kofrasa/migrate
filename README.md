@@ -34,7 +34,7 @@ optional arguments:
                         using the "create" command (default: last revision)
   -m MESSAGE            message description for creating new migrations with
                         "create" command
-  -u USER               database user name (default: login_name)
+  -u USER               database user name (default: "francis")
   -p                    prompt for database password. if not supplied assumes
                         no password unless read from config
   --host HOST           database server host (default: "localhost")
@@ -44,7 +44,7 @@ optional arguments:
   --path PATH           path to the migration folder either absolute or
                         relative to the current directory. default to
                         migrations folder in current directory:
-                        /path/to/current/migrations
+                        "/Users/francis/BEBE/workspace/migrate/migrations"
   -f CONFIG             configuration file in ".ini" format. Sections
                         represent configurations for different environments.
                         Keys include (migration_folder, user, password, host,
