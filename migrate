@@ -107,22 +107,33 @@ class Migrate(object):
         print "Done! Revision %s migrated successfully" % rev
 
     def _rollback(self, rev=None):
-        """Rollback the migration for the last revision
+        """Rollback the migration to the given revision
+        :param rev: the revision to rollback to
         """
-        if not rev and not self._rev_folders:
-            assert self._rev_folders, "No migration revision exist"
-        rev = rev or self._rev_folders[-1]
-        print "Rolling revision %s" % rev
-        sql_files = [s for s in glob.glob(os.path.join(self._migration_folder, rev, "*")) if s.endswith(".down.sql")]
-        sql_files.sort(reverse=True)
-        self._exec(sql_files)
-        print "Done! Revision %s rolled back successfully" % rev
+        # if not rev and not self._rev_folders:
+        assert self._rev_folders, "No migration revision exist"
+        if not rev:
+            print "Rolling back last revision %s" % self._rev_folders[-1]
+        else:
+            print "Rolling back to revision %s" % rev
+        rev = int(rev or self._rev_folders[-1])
+        # revision count must be less or equal since revisions are ordered
+        assert len(self._rev_folders) >= rev, "Invalid revision specified"
+        revisions = self._rev_folders[int(rev) - 1:]
+        # execute from latest to oldest revision
+        for rev in reversed(revisions):
+            sql_files = reversed(sorted([
+                s for s in glob.glob(os.path.join(self._migration_folder, rev, "*")) if s.endswith(".down.sql")
+            ]))
+            self._exec(sql_files)
+            if self._verbose:
+                print "Rolled back revision %s" % rev
+        print "Done! Revision rolled back successfully"
 
     def _reset(self):
         """Rollback all migrations
         """
-        for rev in reversed(self._rev_folders):
-            self._rollback(rev)
+        self._rollback(1)
 
     def _refresh(self):
         """Rollback all migrations and run them all again
@@ -147,9 +158,6 @@ class Migrate(object):
         func = globals()["exec_%s" % self._engine]
         try:
             assert callable(func), "No exec function found for " + self._engine
-            cmd_name = cmd.split()[0]
-            cmd_path = subprocess.check_output(["which", cmd_name]).strip()
-            assert os.path.exists(cmd_path), "No %s command found on path" % cmd_name
             for f in files:
                 if self._verbose:
                     print "Applying: %s" % os.path.basename(f)
@@ -159,9 +167,13 @@ class Migrate(object):
 
     def run(self):
         try:
+            # check for availability of target command line tool
+            cmd_name = COMMANDS[self._engine].split()[0]
+            cmd_path = subprocess.check_output(["which", cmd_name]).strip()
+            assert os.path.exists(cmd_path), "No %s command found on path" % cmd_name
             {
-                'create': lambda: self._create(),
-                'migrate': lambda: self._migrate(),
+                'new': lambda: self._create(),
+                'run': lambda: self._migrate(),
                 'rollback': lambda: self._rollback(),
                 'reset': lambda: self._reset(),
                 'refresh': lambda: self._refresh()
@@ -199,9 +211,9 @@ def main():
     migration_path = os.path.join(os.getcwd(), "migrations")
 
     parser = argparse.ArgumentParser(PROGRAM, description=DESC)
-    parser.add_argument("-c", dest='command', default='create',
-                        choices=('create', 'migrate', 'rollback', 'reset', 'refresh'),
-                        help='command to run (default: "create")')
+    parser.add_argument(dest='command', default='new',
+                        choices=('new', 'run', 'rollback', 'reset', 'refresh'),
+                        help='command to run (default: "new")')
     parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev", type=int,

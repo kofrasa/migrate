@@ -15,17 +15,19 @@ $ cp migrate/migrate /usr/local/bin
 ```sh
 $ ./migrate -h
 
-usage: migrate [-h] [-c {create,migrate,rollback,reset,refresh}]
-               [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE] [-u USER]
-               [-p] [--host HOST] [--port PORT] [-db DATABASE] [--path PATH]
-               [-f CONFIG] [--env ENV] [-v]
+usage: migrate [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
+               [-u USER] [-p] [--host HOST] [--port PORT] [-db DATABASE]
+               [--path PATH] [-f CONFIG] [--env ENV] [-v]
+               {new,run,rollback,reset,refresh}
 
 Manage database migrations explicitly using SQL scripts
 
+positional arguments:
+  {new,run,rollback,reset,refresh}
+                        command to run (default: "new")
+
 optional arguments:
   -h, --help            show this help message and exit
-  -c {create,migrate,rollback,reset,refresh}
-                        command to run (default: "create")
   -e {postgres,mysql,sqlite3}
                         database engine (default: "sqlite3")
   -r REV                revision to use. specify "0" for the next revision if
@@ -59,7 +61,7 @@ $ mkdir migrations
 ```
 creating migrations with sqlite3
 ```sh
-$ ./migrate -e sqlite3 -c create -db /path/to/test.db -m "create users table"
+$ ./migrate new -e sqlite3 -db /path/to/test.db -m "create users table"
 ```
 this generates the up and down files using the current timestamp and formatted description in sub revision folder
 ```
@@ -72,12 +74,12 @@ migrations//1:
 
 applying migrations
 ```sh
-$ ./migrate -e sqlite3 -c migrate -db /path/to/test.db
+$ ./migrate run -e sqlite3 -db /path/to/test.db
 ```
 
 rolling back
 ```sh
-$ ./migrate -e sqlite3 -c rollback -db /path/to/test.db
+$ ./migrate rollback -e sqlite3 -db /path/to/test.db
 ```
 
 running with sample configuration example: config.ini
@@ -97,14 +99,14 @@ engine = mysql
 
 execute with configuration for a particular revision
 ```sh
-$ ./migrate -f config.ini -c refresh --env prod
+$ ./migrate refresh -f config.ini --env prod
 ```
 
 ## commands
 | Command  | Description  |
 | :--------| :----------- |
-| create   | create a new migration. specify "-r 0" for a new revision |
-| migrate  | Run migration for the latest revision  |
+| new      | creates a new migration. specify "-r 0" for a new revision |
+| run      | Run the migration for the latest revision  |
 | rollback | Rollback the migration for the last revision |
 | reset    | Rollback all migrations |
 | refresh  | Rollback all migrations and run them all again |
