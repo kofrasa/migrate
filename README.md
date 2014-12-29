@@ -44,7 +44,7 @@ optional arguments:
   --path PATH           path to the migration folder either absolute or
                         relative to the current directory. default to
                         migrations folder in current directory:
-                        "/Users/francis/BEBE/workspace/migrate/migrations"
+                        "/path/to/current/migrations"
   -f CONFIG             configuration file in ".ini" format. Sections
                         represent configurations for different environments.
                         Keys include (migration_folder, user, password, host,
