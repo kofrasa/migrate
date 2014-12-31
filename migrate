@@ -12,7 +12,7 @@ from ConfigParser import SafeConfigParser
 from datetime import datetime
 
 PROGRAM = "migrate"
-DESC = "Manage database migrations explicitly using SQL scripts"
+DESC = "A tool to manage database migrations explicitly using SQL scripts"
 COMMANDS = {
     'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
@@ -22,7 +22,7 @@ PORTS = dict(postgres=5432, mysql=3306)
 
 
 class Migrate(object):
-    """A simple database migration helper
+    """A simple generic database migration helper
     """
 
     def __init__(self, config):
@@ -217,12 +217,12 @@ def main():
     parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev", type=int,
-                        help="revision to use. specify \"0\" for the next revision if using the \"create\" command "
-                             "(default: last revision)")
+                        help="revision to use. specify \"0\" for the next revision if using the \"new\" command. "
+                             "this option applies to only the \"new\" and (default: last revision)")
     parser.add_argument("-m", dest="message",
-                        help="message description for creating new migrations with \"create\" command")
+                        help="message description for creating new migrations with \"new\" command")
     parser.add_argument("-u", dest="user", default=login_name,
-                        help="database user name (default: \"%s\")" % login_name)
+                        help="database user name (default: login name)")
     parser.add_argument("-p", dest="password", action='store_true', default=False,
                         help="prompt for database password. "
                              "if not supplied assumes no password unless read from config")
@@ -231,10 +231,11 @@ def main():
     parser.add_argument("--port",
                         help='server port (defaults: postgres=5432, mysql=3306)')
     parser.add_argument("-db", dest="database", default=login_name,
-                        help="database name to use. specify a /path/to/file if using sqlite3")
+                        help="database name to use. specify a /path/to/file if using sqlite3. "
+                             "(default: login name)")
     parser.add_argument("--path", default=migration_path,
                         help="path to the migration folder either absolute or relative to the current directory. "
-                             "default to migrations folder in current directory: \"%s\"" % migration_path)
+                             "defaults to migrations in current working directory")
     parser.add_argument("-f", dest='file', metavar='CONFIG',
                         help="configuration file in \".ini\" format. "
                              "Sections represent configurations for different environments. Keys include "
