@@ -1,9 +1,8 @@
-# Created by .gitignore support plugin (hsz.mobi)
 .*
 ~*
 *.ini
-.py[cod]
-.iws
-.iml
-.ipr
-migrations/
+*.py[cod]
+*.iws
+*.iml
+*.ipr
+tmp/

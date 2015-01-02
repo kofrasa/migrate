@@ -36,7 +36,8 @@ optional arguments:
   -e {postgres,mysql,sqlite3}
                         database engine (default: "sqlite3")
   -r REV                revision to use. specify "0" for the next revision if
-                        using the "create" command (default: last revision)
+                        using the "new" command. this option applies to only
+                        the "new" and (default: last revision)
   -m MESSAGE            message description for creating new migrations with
                         "new" command
   -u USER               database user name (default: login name)
@@ -44,18 +45,19 @@ optional arguments:
                         no password unless read from config
   --host HOST           database server host (default: "localhost")
   --port PORT           server port (defaults: postgres=5432, mysql=3306)
-  -db DATABASE          database name to use. specify a /path/to/file if using
+  -d DATABASE           database name to use. specify a /path/to/file if using
                         sqlite3. (default: login name)
   --path PATH           path to the migration folder either absolute or
                         relative to the current directory. defaults to
-                        migrations in current working directory
+                        "migrations" in current working directory
   -f CONFIG             configuration file in ".ini" format. Sections
                         represent configurations for different environments.
-                        Keys include (migration_folder, user, password, host,
+                        Keys include (migration_path, user, password, host,
                         port, database, engine)
   --env ENV             configuration environment. used only with config file
                         as the given sections (default: "default")
-  -v                    show verbose output
+  -v                    show verbose output. use multiple times for different
+                        verbosity levels
 ```
 
 ## examples
