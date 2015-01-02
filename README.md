@@ -10,10 +10,11 @@ Any migration operation will run with all files regardless of errors reported by
 Typically errors from the backing database engine will be sent to stderr as well as errors from the script.
 
 ## install
-clone and install to reachable bin PATH
+clone and install to user bin PATH
 ```sh
 $ git clone https://github.com/kofrasa/migrate.git
-$ cp migrate/migrate /usr/local/bin
+$ cp migrate/migrate.py /usr/local/bin && cd /usr/local/bin
+$ ln -s migrate.py migrate
 ```
 
 ## usage
@@ -69,7 +70,7 @@ $ mkdir migrations
 
 creating migrations with sqlite3
 ```sh
-$ ./migrate new -e sqlite3 -db /path/to/test.db -m "create users table"
+$ migrate new -e sqlite3 -d /path/to/test.db -m "create users table"
 ```
 
 this generates the up and down files using the current timestamp and formatted description in the current revision folder
@@ -83,12 +84,12 @@ migrations//1:
 
 applying migrations
 ```sh
-$ ./migrate run -e sqlite3 -db /path/to/test.db
+$ migrate run -e sqlite3 -d /path/to/test.db
 ```
 
 rolling back
 ```sh
-$ ./migrate rollback -e sqlite3 -db /path/to/test.db
+$ migrate rollback -e sqlite3 -d /path/to/test.db
 ```
 
 running with sample configuration example: config.ini
@@ -108,7 +109,7 @@ engine = mysql
 
 execute with configuration for a particular revision using a preferred environment
 ```sh
-$ ./migrate refresh -f config.ini --env prod
+$ migrate refresh -f config.ini --env prod
 ```
 
 ## commands
