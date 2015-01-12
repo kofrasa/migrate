@@ -105,7 +105,7 @@ class Migrate(object):
                 w.write("-- %s: %s" % (s.upper(), self._message))
                 self._log(1, file_path)
 
-    def _cmd_run(self, rev=None):
+    def _cmd_up(self, rev=None):
         """Run migration for the given revision or last if none is specified
         """
         if not rev and not self._revisions:
@@ -117,7 +117,7 @@ class Migrate(object):
         self._exec(sql_files)
         self._log(1, "Done! Revision %s migrated successfully" % rev)
 
-    def _cmd_rollback(self, rev=None):
+    def _cmd_down(self, rev=None):
         """Rollback the migration to the given revision
         :param rev: the revision to rollback to
         """
@@ -142,14 +142,14 @@ class Migrate(object):
     def _cmd_reset(self):
         """Rollback all migrations
         """
-        self._cmd_rollback(1)
+        self._cmd_down(1)
 
     def _cmd_refresh(self):
         """Rollback all migrations and run them all again
         """
         self._cmd_reset()
         for rev in self._revisions:
-            self._cmd_run(rev)
+            self._cmd_up(rev)
 
     def _exec(self, files):
         password = None
@@ -181,8 +181,8 @@ class Migrate(object):
             assert os.path.exists(cmd_path), "No %s command found on path" % cmd_name
             {
                 'new': lambda: self._cmd_new(),
-                'run': lambda: self._cmd_run(),
-                'rollback': lambda: self._cmd_rollback(),
+                'up': lambda: self._cmd_up(),
+                'down': lambda: self._cmd_down(),
                 'reset': lambda: self._cmd_reset(),
                 'refresh': lambda: self._cmd_refresh()
             }.get(self._command)()
@@ -223,7 +223,7 @@ def main():
 
     parser = argparse.ArgumentParser(PROGRAM, description=DESC)
     parser.add_argument(dest='command', default='new',
-                        choices=('new', 'run', 'rollback', 'reset', 'refresh'),
+                        choices=('new', 'up', 'down', 'reset', 'refresh'),
                         help='command to run (default: "new")')
     parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")

@@ -21,44 +21,10 @@ $ ln -s migrate.py migrate
 ```sh
 $ ./migrate -h
 
-usage: migrate [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
-               [-u USER] [-p] [--host HOST] [--port PORT] [-db DATABASE]
-               [--path PATH] [-f CONFIG] [--env ENV] [-v]
-               {new,run,rollback,reset,refresh}
-
-Manage database migrations explicitly using SQL scripts
-
-positional arguments:
-  {new,run,rollback,reset,refresh}
-                        command to run (default: "new")
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -e {postgres,mysql,sqlite3}
-                        database engine (default: "sqlite3")
-  -r REV                revision to use. specify "0" for the next revision if
-                        using the "new" command. this option applies to only
-                        the "new" and (default: last revision)
-  -m MESSAGE            message description for creating new migrations with
-                        "new" command
-  -u USER               database user name (default: login name)
-  -p                    prompt for database password. if not supplied assumes
-                        no password unless read from config
-  --host HOST           database server host (default: "localhost")
-  --port PORT           server port (defaults: postgres=5432, mysql=3306)
-  -d DATABASE           database name to use. specify a /path/to/file if using
-                        sqlite3. (default: login name)
-  --path PATH           path to the migration folder either absolute or
-                        relative to the current directory. defaults to
-                        "migrations" in current working directory
-  -f CONFIG             configuration file in ".ini" format. Sections
-                        represent configurations for different environments.
-                        Keys include (migration_path, user, password, host,
-                        port, database, engine)
-  --env ENV             configuration environment. used only with config file
-                        as the given sections (default: "default")
-  -v                    show verbose output. use multiple times for different
-                        verbosity levels
+usage: migrate.py [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
+                  [-u USER] [-p] [--host HOST] [--port PORT] [-d DATABASE]
+                  [--path PATH] [-f CONFIG] [--env ENV] [-v]
+                  {new,up,down,reset,refresh}
 ```
 
 ## examples
@@ -84,12 +50,12 @@ migrations//1:
 
 applying migrations
 ```sh
-$ migrate run -e sqlite3 -d /path/to/test.db
+$ migrate up -e sqlite3 -d /path/to/test.db
 ```
 
 rolling back
 ```sh
-$ migrate rollback -e sqlite3 -d /path/to/test.db
+$ migrate down -e sqlite3 -d /path/to/test.db
 ```
 
 running with sample configuration example: config.ini
@@ -116,10 +82,10 @@ $ migrate refresh -f config.ini --env prod
 | Command  | Description  |
 | :--------| :----------- |
 | new      | add a new migration. specify "-r 0" to create a new revision |
-| run      | Run the migration for the latest revision  |
-| rollback | Rollback migration for the last or a target revision |
-| reset    | Rollback all migrations |
-| refresh  | Rollback all migrations and run them all again |
+| up       | Upgrade the latest revision  |
+| down     | Downgrade the last or to the target revision |
+| reset    | Rollback all revisions |
+| refresh  | Rollback and re-run all revisions |
 
 
 ## license

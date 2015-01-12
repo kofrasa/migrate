@@ -51,9 +51,9 @@ class MigrateTestCase(unittest.TestCase):
             with open(filename, 'w') as w:
                 w.write(sql[i])
 
-    def test_run_command(self):
+    def test_up_command(self):
         self.test_new_command()
-        self.config['command'] = 'run'
+        self.config['command'] = 'up'
         Migrate(self.config).run()
         self.assertTrue(os.path.exists(self.config['database']), 'no database file was created')
         # insert some data to confirm that scripts were applied
@@ -63,9 +63,9 @@ class MigrateTestCase(unittest.TestCase):
         res = subprocess.check_output(["sqlite3", self.config['database'], "select count(*) from users"])
         self.assertEqual(int(res.strip()), 1, "failed to apply migration scripts")
 
-    def test_rollback_command(self):
-        self.test_run_command()
-        self.config['command'] = 'rollback'
+    def test_down_command(self):
+        self.test_up_command()
+        self.config['command'] = 'down'
         Migrate(self.config).run()
         try:
             subprocess.check_call(["sqlite3", self.config['database'], "select * from users"])
@@ -73,7 +73,7 @@ class MigrateTestCase(unittest.TestCase):
             self.assertEqual(e.returncode, 1, "failed to rollback database")
 
     def test_reset_command(self):
-        self.test_run_command()
+        self.test_up_command()
         self.config['command'] = 'reset'
         Migrate(self.config).run()
         try:
@@ -82,7 +82,7 @@ class MigrateTestCase(unittest.TestCase):
             self.assertEqual(e.returncode, 1, "failed to reset database")
 
     def test_refresh_command(self):
-        self.test_run_command()
+        self.test_up_command()
         self.config['command'] = 'refresh'
         Migrate(self.config).run()
         subprocess.check_call(["sqlite3", self.config['database'],
