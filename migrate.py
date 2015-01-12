@@ -105,51 +105,55 @@ class Migrate(object):
                 w.write("-- %s: %s" % (s.upper(), self._message))
                 self._log(1, file_path)
 
-    def _cmd_up(self, rev=None):
-        """Run migration for the given revision or last if none is specified
+    def _cmd_up(self):
+        """Upgrade the migration
         """
-        if not rev and not self._revisions:
-            assert self._revisions, "No revision exist"
-        rev = rev or self._revisions[-1]
-        self._log(1, "Migrating revision %s" % rev)
-        sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.up.sql"))
-        sql_files.sort()
-        self._exec(sql_files)
-        self._log(1, "Done! Revision %s migrated successfully" % rev)
-
-    def _cmd_down(self, rev=None):
-        """Rollback the migration to the given revision
-        :param rev: the revision to rollback to
-        """
-        # if not rev and not self._rev_folders:
         assert self._revisions, "No migration revision exist"
-        if not rev:
-            self._log(1, "Rolling back last revision %s" % self._revisions[-1])
-        else:
-            self._log(1, "Rolling back to revision %s" % rev)
-        rev = int(rev or self._revisions[-1])
+        revision = self._rev or self._revisions[-1]
         # revision count must be less or equal since revisions are ordered
-        assert len(self._revisions) >= rev, "Invalid revision specified"
-        revisions = self._revisions[int(rev) - 1:]
+        assert revision in self._revisions, "Invalid revision specified"
+        if not self._rev:
+            self._log(1, "Upgrading current revision")
+        else:
+            self._log(1, "Upgrading from revision %s" % revision)
+        for rev in self._revisions[int(revision) - 1:]:
+            sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.up.sql"))
+            sql_files.sort()
+            self._exec(sql_files)
+            self._log(2, "Upgraded revision %s" % rev)
+        self._log(1, "Done! Upgraded successfully")
+
+    def _cmd_down(self):
+        """Downgrade the migration
+        """
+        assert self._revisions, "No migration revision exist"
+        revision = self._rev or self._revisions[-1]
+        # revision count must be less or equal since revisions are ordered
+        assert revision in self._revisions, "Invalid revision specified"
+        if not self._rev:
+            self._log(1, "Downgrading current revision")
+        else:
+            self._log(1, "Downgrading to revision %s" % revision)
         # execute from latest to oldest revision
-        for rev in reversed(revisions):
+        for rev in reversed(self._revisions[int(revision) - 1:]):
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.down.sql"))
             sql_files.sort(reverse=True)
             self._exec(sql_files)
-            self._log(2, "Rolled back revision %s" % rev)
-        self._log(1, "Done! Revision rolled back successfully")
+            self._log(2, "Downgraded revision %s" % rev)
+        self._log(1, "Done! Downgraded successfully")
 
     def _cmd_reset(self):
-        """Rollback all migrations
+        """Downgrade all revisions
         """
-        self._cmd_down(1)
+        self._rev = '1'
+        self._cmd_down()
 
     def _cmd_refresh(self):
-        """Rollback all migrations and run them all again
+        """Downgrade and re-run all revisions
         """
-        self._cmd_reset()
-        for rev in self._revisions:
-            self._cmd_up(rev)
+        self._rev = '1'
+        self._cmd_down()
+        self._cmd_up()
 
     def _exec(self, files):
         password = None
@@ -224,7 +228,7 @@ def main():
     parser = argparse.ArgumentParser(PROGRAM, description=DESC)
     parser.add_argument(dest='command', default='new',
                         choices=('new', 'up', 'down', 'reset', 'refresh'),
-                        help='command to run (default: "new")')
+                        help='command (default: "new")')
     parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev",

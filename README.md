@@ -81,11 +81,11 @@ $ migrate refresh -f config.ini --env prod
 ## commands
 | Command  | Description  |
 | :--------| :----------- |
-| new      | add a new migration. specify "-r 0" to create a new revision |
+| new      | Add new migration files. specify "-r 0" to create a new revision |
 | up       | Upgrade the latest revision  |
 | down     | Downgrade the last or to the target revision |
-| reset    | Rollback all revisions |
-| refresh  | Rollback and re-run all revisions |
+| reset    | Downgrade all revisions |
+| refresh  | Downgrade and re-run all revisions |
 
 
 ## license
