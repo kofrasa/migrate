@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 A simple generic database migration tool
 """
 
-__copyright__ = "The MIT License (MIT) Copyright (c) 2014 Francis Asante"
+__author__ = "Francis Asante <kofrasa@gmail.com>"
+__copyright__ = "Copyright (c) 2015"
+__license__ = "MIT"
 
 import os
 import sys

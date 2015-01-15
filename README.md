@@ -24,7 +24,7 @@ $ ./migrate -h
 usage: migrate.py [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
                   [-u USER] [-p] [--host HOST] [--port PORT] [-d DATABASE]
                   [--path PATH] [-f CONFIG] [--env ENV] [-v]
-                  {new,up,down,reset,refresh}
+                  {create,up,down,reset,refresh}
 ```
 
 ## examples
@@ -36,7 +36,7 @@ $ mkdir migrations
 
 creating migrations with sqlite3
 ```sh
-$ migrate new -e sqlite3 -d /path/to/test.db -m "create users table"
+$ migrate create -e sqlite3 -d /path/to/test.db -m "create users table"
 ```
 
 this generates the up and down files using the current timestamp and formatted description in the current revision folder
@@ -81,7 +81,7 @@ $ migrate refresh -f config.ini --env prod
 ## commands
 | Command  | Description  |
 | :--------| :----------- |
-| new      | Add new migration files. specify "-r 0" to create a new revision |
+| create   | Create a migration. Specify "-r 0" to add a new revision |
 | up       | Upgrade the latest revision  |
 | down     | Downgrade the last or to the target revision |
 | reset    | Downgrade all revisions |
@@ -89,5 +89,5 @@ $ migrate refresh -f config.ini --env prod
 
 
 ## license
-The MIT License (MIT) Copyright (c) 2014 Francis Asante
+MIT
 
