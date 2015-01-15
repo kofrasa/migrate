@@ -4,21 +4,21 @@
 A simple generic database migration tool
 """
 
-__author__ = "Francis Asante <kofrasa@gmail.com>"
-__copyright__ = "Copyright (c) 2015"
-__license__ = "MIT"
-
 import os
 import sys
 import argparse
 import glob
 import subprocess
-from ConfigParser import SafeConfigParser
+from ConfigParser import ConfigParser
 from datetime import datetime
+
+__author__ = "Francis Asante <kofrasa@gmail.com>"
+__copyright__ = "Copyright (c) 2015"
+__license__ = "MIT"
 
 
 PROGRAM = os.path.split(__file__)[1]
-DESC = "A tool to manage database migrations explicitly using SQL scripts"
+DESC = "A generic database migration tool using SQL scripts"
 COMMANDS = {
     'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
@@ -34,7 +34,7 @@ class Migrate(object):
     def __init__(self, config):
         if config.get('file'):
             # read ini configuration
-            parser = SafeConfigParser()
+            parser = ConfigParser()
             parser.read(config['file'])
             env = config.get('env', 'default')
             for name in ('engine', 'user', 'password', 'migration_path', 'host', 'port', 'database', 'verbose'):
@@ -179,7 +179,7 @@ class Migrate(object):
             for f in files:
                 self._log(2, "Applying: %s" % os.path.basename(f))
                 func(cmd, f, password)
-        except Exception, e:
+        except Exception as e:
             print >> sys.stderr, e.message
 
     def run(self):
