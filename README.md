@@ -2,24 +2,29 @@
 
 A simple generic database migration tool eschewing boilerplate and framework dependencies
 
-Migrations are applied in a batch called a revision. A revision is represented with a folder named 
-in consecutive numerical order, starting from **"1"**, and includes pairs of migration scripts
+Migrations are applied in batches called a revision. A revision is represented by a folder named
+in consecutive numerical order, starting from **"1"**. Each revision contains pairs of migration scripts
 with extensions **.up.sql** and **.down.sql** for upgrading and downgrading the database respectively. 
 
 Any migration operation will run with all files regardless of errors reported by the specified database engine.
-Typically errors from the backing database engine will be sent to stderr as well as errors from the script.
+All errors including the ones from the database engine are sent to **stderr**.
 
 ## install
-clone and install to user bin PATH
+clone and install
 ```sh
 $ git clone https://github.com/kofrasa/migrate.git
-$ cp migrate/migrate.py /usr/local/bin && cd /usr/local/bin
-$ ln -s migrate.py migrate
+$ cp migrate
+$ make install
+```
+
+uninstall with
+```sh
+$ make uninstall
 ```
 
 ## usage
 ```sh
-$ ./migrate -h
+$ migrate -h
 
 usage: migrate.py [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
                   [-u USER] [-p] [--host HOST] [--port PORT] [-d DATABASE]
@@ -48,12 +53,12 @@ migrations//1:
 20141215134002.create-users-table.down.sql	20141215134002.create-users-table.up.sql
 ```
 
-applying migrations
+upgrading from current revision
 ```sh
 $ migrate up -e sqlite3 -d /path/to/test.db
 ```
 
-rolling back
+rolling back current revision
 ```sh
 $ migrate down -e sqlite3 -d /path/to/test.db
 ```

@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-A simple generic database migration tool
+    migrate
+    ~~~~~~~
+    A simple generic database migration tool
+
+    :copyright: (c) 2015 Francis Asante <kofrasa@gmail.com>
+    :license: MIT
+    :version: 0.1
 """
 
 import os
@@ -12,13 +18,9 @@ import subprocess
 from ConfigParser import ConfigParser
 from datetime import datetime
 
-__author__ = "Francis Asante <kofrasa@gmail.com>"
-__copyright__ = "Copyright (c) 2015"
-__license__ = "MIT"
-
 
 PROGRAM = os.path.split(__file__)[1]
-DESC = "A generic database migration tool using SQL scripts"
+DESC = "A simple generic database migration tool using SQL scripts"
 COMMANDS = {
     'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
@@ -30,7 +32,6 @@ PORTS = dict(postgres=5432, mysql=3306)
 class Migrate(object):
     """A simple generic database migration helper
     """
-
     def __init__(self, config):
         if config.get('file'):
             # read ini configuration
