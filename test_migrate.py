@@ -22,11 +22,7 @@ class MigrateTestCase(unittest.TestCase):
         if os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
-    def test_new_command(self):
-        """
-        Create a new migration
-        :return:
-        """
+    def test_create_command(self):
         # need SQL commands so sqlite3 database file can be created
         sql = (
             """create table users (
@@ -37,7 +33,7 @@ class MigrateTestCase(unittest.TestCase):
             """,
             "drop table users;"
         )
-        self.config['command'] = 'new'
+        self.config['command'] = 'create'
         self.config['message'] = 'users'
         Migrate(self.config).run()
         rev_folder = os.path.join(self.config['path'], "1")
@@ -52,7 +48,7 @@ class MigrateTestCase(unittest.TestCase):
                 w.write(sql[i])
 
     def test_up_command(self):
-        self.test_new_command()
+        self.test_create_command()
         self.config['command'] = 'up'
         Migrate(self.config).run()
         self.assertTrue(os.path.exists(self.config['database']), 'no database file was created')

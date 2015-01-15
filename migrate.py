@@ -3,6 +3,8 @@
 A simple generic database migration tool
 """
 
+__copyright__ = "The MIT License (MIT) Copyright (c) 2014 Francis Asante"
+
 import os
 import sys
 import argparse
@@ -70,10 +72,10 @@ class Migrate(object):
         if self._verbose >= level:
             print msg
 
-    def _cmd_new(self):
-        """Create a new migration in the current or new revision folder
+    def _cmd_create(self):
+        """Create a migration in the current or new revision folder
         """
-        assert self._message, "Need to supply a message for command \"new\""
+        assert self._message, "Need to supply a message for the \"create\" command"
         if not self._revisions:
             # we start from revision 1
             self._revisions.append("1")
@@ -184,7 +186,7 @@ class Migrate(object):
             cmd_path = subprocess.check_output(["which", cmd_name]).strip()
             assert os.path.exists(cmd_path), "No %s command found on path" % cmd_name
             {
-                'new': lambda: self._cmd_new(),
+                'create': lambda: self._cmd_create(),
                 'up': lambda: self._cmd_up(),
                 'down': lambda: self._cmd_down(),
                 'reset': lambda: self._cmd_reset(),
@@ -226,16 +228,16 @@ def main():
     migration_path = os.path.join(os.getcwd(), "migrations")
 
     parser = argparse.ArgumentParser(PROGRAM, description=DESC)
-    parser.add_argument(dest='command', default='new',
-                        choices=('new', 'up', 'down', 'reset', 'refresh'),
-                        help='command (default: "new")')
+    parser.add_argument(dest='command', default='create',
+                        choices=('create', 'up', 'down', 'reset', 'refresh'),
+                        help='command (default: "create")')
     parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev",
-                        help="revision to use. specify \"0\" for the next revision if using the \"new\" command. "
-                             "this option applies to only the \"new\" and (default: last revision)")
+                        help="revision to use. specify \"0\" for the next revision if using the \"create\" command. "
+                             "this option applies to only the \"create\" and (default: last revision)")
     parser.add_argument("-m", dest="message",
-                        help="message description for creating new migrations with \"new\" command")
+                        help="message description for creating migrations with \"create\" command")
     parser.add_argument("-u", dest="user", default=login_name,
                         help="database user name (default: login name)")
     parser.add_argument("-p", dest="password", action='store_true', default=False,
