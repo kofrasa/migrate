@@ -5,9 +5,9 @@
     ~~~~~~~
     A simple generic database migration tool
 
-    :copyright: (c) 2014-2015 Francis Asante <kofrasa@gmail.com>
+    :copyright: (c) 2015 Francis Asante <kofrasa@gmail.com>
     :license: MIT
-    :version: 0.1
+    :version: 0.1.1
 """
 
 import os
