@@ -1,6 +1,6 @@
 .PHONY: install uninstall test clean
 
-PREFIX?=/usr/local
+PREFIX ?= /usr/local
 
 install:
 	cp -f migrate.py $(PREFIX)/bin/migrate

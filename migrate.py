@@ -5,7 +5,7 @@
     ~~~~~~~
     A simple generic database migration tool
 
-    :copyright: (c) 2015 Francis Asante <kofrasa@gmail.com>
+    :copyright: (c) 2014-2015 Francis Asante <kofrasa@gmail.com>
     :license: MIT
     :version: 0.1
 """
@@ -59,6 +59,7 @@ class Migrate(object):
         self._message = config.get('message')
         self._engine = config.get('engine')
         self._verbose = int(config.get('verbose') or '0')
+        self._dry_run = config.get('dry_run')
         if self._rev:
             assert self._rev.isdigit(), "Revision must be a valid integer"
 
@@ -127,7 +128,7 @@ class Migrate(object):
             sql_files.sort()
             self._exec(sql_files)
             self._log(2, "Upgraded revision %s" % rev)
-        self._log(1, "Done! Upgraded successfully")
+        self._log(1, "Done!")
 
     def _cmd_down(self):
         """Downgrade the migration
@@ -146,7 +147,7 @@ class Migrate(object):
             sql_files.sort(reverse=True)
             self._exec(sql_files)
             self._log(2, "Downgraded revision %s" % rev)
-        self._log(1, "Done! Downgraded successfully")
+        self._log(1, "Done!")
 
     def _cmd_reset(self):
         """Downgrade all revisions
@@ -179,9 +180,15 @@ class Migrate(object):
             assert callable(func), "No exec function found for " + self._engine
             for f in files:
                 self._log(2, "Applying: %s" % os.path.basename(f))
-                func(cmd, f, password)
+                if not self._dry_run:
+                    func(cmd, f, password)
+                else:
+                    print
+                    with open(f, 'r') as fd:
+                        for line in fd:
+                            print line.strip()
         except Exception as e:
-            print >> sys.stderr, e.message
+            print >> sys.stderr, str(e)
 
     def run(self):
         try:
@@ -197,7 +204,7 @@ class Migrate(object):
                 'refresh': lambda: self._cmd_refresh()
             }.get(self._command)()
         except Exception as e:
-            print >> sys.stderr, e.message
+            print >> sys.stderr, str(e)
 
 
 def exec_mysql(cmd, filename, password=None):
@@ -235,15 +242,16 @@ def main():
     parser.add_argument(dest='command', default='create',
                         choices=('create', 'up', 'down', 'reset', 'refresh'),
                         help='command (default: "create")')
-    parser.add_argument("-e", dest="engine", default='mysql', choices=('postgres', 'mysql', 'sqlite3'),
+    parser.add_argument("-e", dest="engine", default='sqlite3',
+                        choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev",
                         help="revision to use. specify \"0\" for the next revision if using the \"create\" command. "
                              "this option applies to only the \"create\" and (default: last revision)")
     parser.add_argument("-m", dest="message",
-                        help="message description for creating migrations with \"create\" command")
+                        help="message description for migrations created with the \"create\" command")
     parser.add_argument("-u", dest="user", default=login_name,
-                        help="database user name (default: login name)")
+                        help="database user name (default: \"%s\")" % login_name)
     parser.add_argument("-p", dest="password", action='store_true', default=False,
                         help="prompt for database password. "
                              "if not supplied assumes no password unless read from config")
@@ -256,27 +264,28 @@ def main():
                              "(default: login name)")
     parser.add_argument("--path", default=migration_path,
                         help="path to the migration folder either absolute or relative to the current directory. "
-                             "defaults to \"migrations\" in current working directory")
+                             "(default: \"./migrations\"")
     parser.add_argument("-f", dest='file', metavar='CONFIG',
                         help="configuration file in \".ini\" format. "
                              "Sections represent configurations for different environments. Keys include "
                              "(migration_path, user, password, host, port, database, engine)")
-    parser.add_argument("--env", default='default',
+    parser.add_argument("--env", default='dev',
                         help="configuration environment. used only with config file as the given sections "
-                             "(default: \"default\")")
+                             "(default: \"dev\")")
+    parser.add_argument("--dry-run", action='store_true', help="prints the SQL but does not run it.")
     parser.add_argument("-v", dest="verbose", action='count', default=False,
                         help="show verbose output. use multiple times for different verbosity levels")
 
     config = {}
     args = parser.parse_args()
     for name in ('engine', 'command', 'rev', 'password', 'user', 'path', 'env',
-                 'host', 'port', 'database', 'file', 'message', 'verbose'):
+                 'host', 'port', 'database', 'file', 'message', 'verbose', 'dry_run'):
         config[name] = getattr(args, name)
 
     try:
         Migrate(config).run()
     except Exception as e:
-        print >> sys.stderr, e.message
+        print >> sys.stderr, str(e)
         parser.print_usage(sys.stderr)
 
 
