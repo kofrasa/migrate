@@ -29,7 +29,7 @@ $ migrate -h
 usage: migrate.py [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
                   [-u USER] [-p] [--host HOST] [--port PORT] [-d DATABASE]
                   [--path PATH] [-f CONFIG] [--env ENV] [-v]
-                  {create,up,down,reset,refresh}
+                  {create,up,down,refresh}
 ```
 
 ## examples
@@ -89,8 +89,7 @@ $ migrate refresh -f config.ini --env prod
 | create   | Create a migration. Specify "-r 0" to add a new revision |
 | up       | Upgrade the latest revision  |
 | down     | Downgrade the last or to the target revision |
-| reset    | Downgrade all revisions |
-| refresh  | Downgrade and re-run all revisions |
+| refresh  | Downgrade and re-run the last or specified revision |
 
 
 ## license

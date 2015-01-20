@@ -5,9 +5,9 @@
     ~~~~~~~
     A simple generic database migration tool
 
-    :copyright: (c) 2015 Francis Asante <kofrasa@gmail.com>
+    :copyright: (c) 2014 Francis Asante <kofrasa@gmail.com>
     :license: MIT
-    :version: 0.1.1
+    :version: 0.1.2
 """
 
 import os
@@ -32,13 +32,15 @@ PORTS = dict(postgres=5432, mysql=3306)
 class Migrate(object):
     """A simple generic database migration helper
     """
+
     def __init__(self, config):
         if config.get('file'):
             # read ini configuration
             parser = ConfigParser()
             parser.read(config['file'])
             env = config.get('env', 'default')
-            for name in ('engine', 'user', 'password', 'migration_path', 'host', 'port', 'database', 'verbose'):
+            for name in ('engine', 'user', 'password', 'migration_path',
+                         'host', 'port', 'database', 'verbose'):
                 if parser.has_option(env, name):
                     value = parser.get(env, name)
                     if not value:
@@ -68,7 +70,8 @@ class Migrate(object):
         current_dir = os.path.abspath(os.getcwd())
         os.chdir(self._migration_path)
         # cache ordered list of the names of all revision folders
-        self._revisions = map(str, sorted(map(int, filter(lambda x: x.isdigit(), glob.glob("*")))))
+        self._revisions = map(str,
+                              sorted(map(int, filter(lambda x: x.isdigit(), glob.glob("*")))))
         os.chdir(current_dir)
 
     def _log(self, level, msg):
@@ -115,10 +118,7 @@ class Migrate(object):
     def _cmd_up(self):
         """Upgrade the migration
         """
-        assert self._revisions, "No migration revision exist"
-        revision = self._rev or self._revisions[-1]
-        # revision count must be less or equal since revisions are ordered
-        assert revision in self._revisions, "Invalid revision specified"
+        revision = self._get_revision()
         if not self._rev:
             self._log(1, "Upgrading current revision")
         else:
@@ -133,10 +133,7 @@ class Migrate(object):
     def _cmd_down(self):
         """Downgrade the migration
         """
-        assert self._revisions, "No migration revision exist"
-        revision = self._rev or self._revisions[-1]
-        # revision count must be less or equal since revisions are ordered
-        assert revision in self._revisions, "Invalid revision specified"
+        revision = self._get_revision()
         if not self._rev:
             self._log(1, "Downgrading current revision")
         else:
@@ -149,18 +146,20 @@ class Migrate(object):
             self._log(2, "Downgraded revision %s" % rev)
         self._log(1, "Done!")
 
-    def _cmd_reset(self):
-        """Downgrade all revisions
-        """
-        self._rev = '1'
-        self._cmd_down()
-
     def _cmd_refresh(self):
-        """Downgrade and re-run all revisions
+        """Downgrade and re-run revisions
         """
-        self._rev = '1'
         self._cmd_down()
         self._cmd_up()
+
+    def _get_revision(self):
+        """Validate and return the revision to use for current command
+        """
+        assert self._revisions, "No migration revision exist"
+        revision = self._rev or self._revisions[-1]
+        # revision count must be less or equal since revisions are ordered
+        assert revision in self._revisions, "Invalid revision specified"
+        return revision
 
     def _exec(self, files):
         password = None
@@ -200,7 +199,6 @@ class Migrate(object):
                 'create': lambda: self._cmd_create(),
                 'up': lambda: self._cmd_up(),
                 'down': lambda: self._cmd_down(),
-                'reset': lambda: self._cmd_reset(),
                 'refresh': lambda: self._cmd_refresh()
             }.get(self._command)()
         except Exception as e:
@@ -240,16 +238,17 @@ def main():
 
     parser = argparse.ArgumentParser(PROGRAM, description=DESC)
     parser.add_argument(dest='command', default='create',
-                        choices=('create', 'up', 'down', 'reset', 'refresh'),
+                        choices=('create', 'up', 'down', 'refresh'),
                         help='command (default: "create")')
     parser.add_argument("-e", dest="engine", default='sqlite3',
                         choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev",
-                        help="revision to use. specify \"0\" for the next revision if using the \"create\" command. "
-                             "this option applies to only the \"create\" and (default: last revision)")
+                        help="revision to use. specify \"0\" for the next revision if using the "
+                             "\"create\" command. (default: last revision)")
     parser.add_argument("-m", dest="message",
-                        help="message description for migrations created with the \"create\" command")
+                        help="message description for migrations created with the "
+                             "\"create\" command")
     parser.add_argument("-u", dest="user", default=login_name,
                         help="database user name (default: \"%s\")" % login_name)
     parser.add_argument("-p", dest="password", action='store_true', default=False,
@@ -263,18 +262,21 @@ def main():
                         help="database name to use. specify a /path/to/file if using sqlite3. "
                              "(default: login name)")
     parser.add_argument("--path", default=migration_path,
-                        help="path to the migration folder either absolute or relative to the current directory. "
-                             "(default: \"./migrations\"")
+                        help="path to the migration folder either absolute or relative to the "
+                             "current directory. (default: \"./migrations\"")
     parser.add_argument("-f", dest='file', metavar='CONFIG',
                         help="configuration file in \".ini\" format. "
-                             "Sections represent configurations for different environments. Keys include "
-                             "(migration_path, user, password, host, port, database, engine)")
+                             "Sections represent configurations for different environments. "
+                             "Keys include (migration_path, user, password, host, port, "
+                             "database, engine)")
     parser.add_argument("--env", default='dev',
-                        help="configuration environment. used only with config file as the given sections "
-                             "(default: \"dev\")")
-    parser.add_argument("--dry-run", action='store_true', help="prints the SQL but does not run it.")
+                        help="configuration environment. used only with config file as the "
+                             "given sections (default: \"dev\")")
+    parser.add_argument("--dry-run", action='store_true',
+                        help="prints the SQL but does not run it.")
     parser.add_argument("-v", dest="verbose", action='count', default=False,
-                        help="show verbose output. use multiple times for different verbosity levels")
+                        help="show verbose output. use multiple times for different "
+                             "verbosity levels")
 
     config = {}
     args = parser.parse_args()

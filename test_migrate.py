@@ -40,7 +40,8 @@ class MigrateTestCase(unittest.TestCase):
         # check that all folders have been created
         self.assertTrue(os.path.exists(rev_folder), "revision folder not created")
         # must create 2 files
-        self.assertEquals(len(glob.glob(os.path.join(rev_folder, '*'))), 2, "could not create migration files")
+        self.assertEquals(len(glob.glob(os.path.join(rev_folder, '*'))), 2,
+                          "could not create migration files")
         # add some SQL
         for i, s in enumerate(('up', 'down')):
             filename = glob.glob(os.path.join(rev_folder, '*.users.%s.sql' % s))[0]
@@ -56,7 +57,8 @@ class MigrateTestCase(unittest.TestCase):
         subprocess.check_call(["sqlite3", self.config['database'],
                               "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
         # query for inserted data
-        res = subprocess.check_output(["sqlite3", self.config['database'], "select count(*) from users"])
+        res = subprocess.check_output(["sqlite3", self.config['database'],
+                                       "select count(*) from users"])
         self.assertEqual(int(res.strip()), 1, "failed to apply migration scripts")
 
     def test_down_command(self):
@@ -68,15 +70,6 @@ class MigrateTestCase(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             self.assertEqual(e.returncode, 1, "failed to rollback database")
 
-    def test_reset_command(self):
-        self.test_up_command()
-        self.config['command'] = 'reset'
-        Migrate(self.config).run()
-        try:
-            subprocess.check_call(["sqlite3", self.config['database'], "select * from users"])
-        except subprocess.CalledProcessError as e:
-            self.assertEqual(e.returncode, 1, "failed to reset database")
-
     def test_refresh_command(self):
         self.test_up_command()
         self.config['command'] = 'refresh'
@@ -84,7 +77,8 @@ class MigrateTestCase(unittest.TestCase):
         subprocess.check_call(["sqlite3", self.config['database'],
                               "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
         # query for inserted data
-        res = subprocess.check_output(["sqlite3", self.config['database'], "select count(*) from users"])
+        res = subprocess.check_output(["sqlite3", self.config['database'],
+                                       "select count(*) from users"])
         self.assertEqual(int(res.strip()), 1, "failed to apply migration scripts")
 
 if __name__ == '__main__':
