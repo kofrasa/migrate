@@ -5,9 +5,9 @@
     ~~~~~~~
     A simple generic database migration tool
 
-    :copyright: (c) 2014 Francis Asante <kofrasa@gmail.com>
+    :copyright: (c) 2014 Francis Asante
     :license: MIT
-    :version: 0.2
+    :version: 0.2.1
 """
 
 import os
@@ -38,7 +38,7 @@ class Migrate(object):
             # read ini configuration
             parser = ConfigParser()
             parser.read(config['file'])
-            env = config.get('env', 'default')
+            env = config.get('env', 'dev')
             for name in ('engine', 'user', 'password', 'migration_path',
                          'host', 'port', 'database', 'verbose'):
                 if parser.has_option(env, name):
@@ -263,7 +263,7 @@ def main():
                              "(default: login name)")
     parser.add_argument("--path", default=migration_path,
                         help="path to the migration folder either absolute or relative to the "
-                             "current directory. (default: \"./migrations\"")
+                             "current directory. (default: \"./migrations\")")
     parser.add_argument("-f", dest='file', metavar='CONFIG',
                         help="configuration file in \".ini\" format. "
                              "Sections represent configurations for different environments. "
