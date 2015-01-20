@@ -7,7 +7,7 @@
 
     :copyright: (c) 2014 Francis Asante <kofrasa@gmail.com>
     :license: MIT
-    :version: 0.1.2
+    :version: 0.2
 """
 
 import os
