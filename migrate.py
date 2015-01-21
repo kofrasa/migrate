@@ -240,7 +240,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog=os.path.split(__file__)[1],
         description="A simple generic database migration tool using SQL scripts",
-        usage="%(prog)s <command> [options]")
+        usage="%(prog)s [options] <command> ")
     parser.add_argument(dest='command', default='create',
                         choices=('create', 'up', 'down', 'refresh'),
                         help='command (default: "create")')

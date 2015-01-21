@@ -1,13 +1,12 @@
 # migrate
 
-A simple generic database migration tool eschewing boilerplate and framework dependencies
+A simple generic database migration tool eschewing boilerplate and framework dependencies.
 
 Migrations are applied in batches called a revision. A revision is represented by a folder named
 in consecutive numerical order, starting from **"1"**. Each revision contains pairs of migration scripts
 with extensions **.up.sql** and **.down.sql** for upgrading and downgrading the database respectively. 
 
-Any migration operation will run with all files regardless of errors reported by the specified database engine.
-All errors including the ones from the database engine are sent to **stderr**.
+Migration operatinos will run with all files regardless of errors from database the engine.
 
 ## install
 clone and install
@@ -24,9 +23,7 @@ $ make uninstall
 
 ## usage
 ```sh
-$ migrate -h
-
-usage: migrate <command> [options]
+usage: migrate [options] <command>
 ```
 
 ## examples
@@ -67,7 +64,7 @@ database = /path/to/test.db
 engine = sqlite3
 
 [prod]
-migration_folder = /path/to/prod/migrations
+migration_path = /path/to/prod/migrations
 database = superdb
 user = francis
 password = sUP@^8
