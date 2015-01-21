@@ -9,7 +9,7 @@
     :license: MIT
 """
 
-__version__ = '0.2.2'
+__version__ = '0.3'
 
 import os
 import sys
@@ -21,7 +21,7 @@ from datetime import datetime
 
 
 COMMANDS = {
-    'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
+    'postgres': "psql -w --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
     'sqlite3': "sqlite3 {database}"
 }
@@ -59,8 +59,8 @@ class Migrate(object):
         self._command = config.get('command')
         self._message = config.get('message')
         self._engine = config.get('engine')
-        self._verbose = int(config.get('verbose') or '0')
-        self._dry_run = config.get('dry_run')
+        self._verbose = int(config.get('verbose', '0'))
+        self._debug = bool(config.get('debug', False))
         if self._rev:
             assert self._rev.isdigit(), "Revision must be a valid integer"
 
@@ -125,8 +125,7 @@ class Migrate(object):
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.up.sql"))
             sql_files.sort()
             self._exec(sql_files)
-            self._log(1, "upgraded revision %s" % rev)
-        self._log(0, "done!")
+            self._log(0, "done: upgraded revision %s" % rev)
 
     def _cmd_down(self):
         """Downgrade to a revision
@@ -141,8 +140,7 @@ class Migrate(object):
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.down.sql"))
             sql_files.sort(reverse=True)
             self._exec(sql_files)
-            self._log(1, "downgraded revision %s" % rev)
-        self._log(0, "done!")
+            self._log(0, "down: downgraded revision %s" % rev)
 
     def _cmd_refresh(self):
         """Downgrade and re-run revisions
@@ -180,13 +178,7 @@ class Migrate(object):
             assert callable(func), "no exec function found for " + self._engine
             for f in files:
                 self._log(1, "applying: %s" % os.path.basename(f))
-                if not self._dry_run:
-                    func(cmd, f, self._password)
-                else:
-                    print
-                    with open(f, 'r') as fd:
-                        for line in fd:
-                            print line.strip()
+                func(cmd, f, self._password, self._debug)
         except Exception as e:
             print >> sys.stderr, str(e)
 
@@ -206,18 +198,28 @@ class Migrate(object):
             print >> sys.stderr, str(e)
 
 
-def exec_mysql(cmd, filename, password=None):
+def _debug(msg):
+    print "[debug] %s" % msg
+
+
+def exec_mysql(cmd, filename, password=None, debug=False):
     if password:
         cmd = cmd + ' -p' + password
+    if debug:
+        _debug("%s < %s" % (cmd, filename))
+        return 0
     with open(filename) as f:
         return subprocess.call(cmd.split(), stdin=f)
 
 # reuse :)
-exec_sqlite3 = lambda a, b, c: exec_mysql(a, b, None)
+exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
 
 
-def exec_postgres(cmd, filename, password=None):
+def exec_postgres(cmd, filename, password=None, debug=False):
     # psql tool will read the password from the system environment
+    if debug:
+        _debug("%s -f %s" % (cmd, filename))
+        return 0
     env_password = None
     if password:
         # backup any existing password
@@ -270,14 +272,14 @@ def main():
                              "current directory. (default: \"./migrations\")")
     parser.add_argument("-f", dest='file', metavar='CONFIG',
                         help="configuration file in \".ini\" format. "
-                             "Sections represent configurations for different environments. "
+                             "Sections represent different configuration environments. "
                              "Keys include (migration_path, user, password, host, port, "
                              "database, engine)")
     parser.add_argument("--env", default='dev',
-                        help="configuration environment. used only with config file as the "
-                             "given sections (default: \"dev\")")
-    parser.add_argument("--dry-run", action='store_true',
-                        help="prints the SQL but does not run it.")
+                        help="configuration environment. applies only to config file option "
+                             "(default: \"dev\")")
+    parser.add_argument("--debug", action='store_true', default=False,
+                        help="print the commands but does not execute.")
     parser.add_argument("-v", dest="verbose", action='count', default=0,
                         help="show verbose output.")
     parser.add_argument('-V', '--version', action='version',
@@ -287,7 +289,7 @@ def main():
     config = {}
     args = parser.parse_args()
     for name in ('engine', 'command', 'rev', 'password', 'user', 'path', 'env',
-                 'host', 'port', 'database', 'file', 'message', 'verbose', 'dry_run'):
+                 'host', 'port', 'database', 'file', 'message', 'verbose', 'debug'):
         config[name] = getattr(args, name)
 
     try:
