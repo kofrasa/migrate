@@ -55,7 +55,7 @@ class MigrateTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(self.config['database']), 'no database file was created')
         # insert some data to confirm that scripts were applied
         subprocess.check_call(["sqlite3", self.config['database'],
-                              "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
+                               "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
         # query for inserted data
         res = subprocess.check_output(["sqlite3", self.config['database'],
                                        "select count(*) from users"])
@@ -75,11 +75,24 @@ class MigrateTestCase(unittest.TestCase):
         self.config['command'] = 'refresh'
         Migrate(self.config).run()
         subprocess.check_call(["sqlite3", self.config['database'],
-                              "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
+                               "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
         # query for inserted data
         res = subprocess.check_output(["sqlite3", self.config['database'],
                                        "select count(*) from users"])
         self.assertEqual(int(res.strip()), 1, "failed to apply migration scripts")
+
+    def test_config_file(self):
+        filename = tempfile.mktemp(dir=self.tmp_dir)
+        with open(filename, 'w') as f:
+            f.write('\n'.join([
+                '[test]',
+                'migration_path = %s' % self.config['path'],
+                'engine = sqlite3',
+                'database = %s' % self.config['database']]))
+        self.config = {'file': filename, 'env': 'test'}
+        # will perform: create -> up -> down -> up
+        self.test_refresh_command()
+
 
 if __name__ == '__main__':
     unittest.main()

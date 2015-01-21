@@ -26,10 +26,7 @@ $ make uninstall
 ```sh
 $ migrate -h
 
-usage: migrate.py [-h] [-e {postgres,mysql,sqlite3}] [-r REV] [-m MESSAGE]
-                  [-u USER] [-p] [--host HOST] [--port PORT] [-d DATABASE]
-                  [--path PATH] [-f CONFIG] [--env ENV] [-v]
-                  {create,up,down,refresh}
+usage: migrate <command> [options]
 ```
 
 ## examples
