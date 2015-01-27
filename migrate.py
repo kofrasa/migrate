@@ -9,7 +9,7 @@
     :license: MIT
 """
 
-__version__ = '0.3'
+__version__ = '0.3.1'
 
 import os
 import sys
