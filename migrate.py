@@ -21,7 +21,7 @@ from datetime import datetime
 
 
 COMMANDS = {
-    'postgres': "psql -w --host {host} --port {port} --username {user} -d {database}",
+    'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
     'sqlite3': "sqlite3 {database}"
 }
@@ -165,11 +165,6 @@ class Migrate(object):
             COMMANDS[self._engine].split()[0]
 
     def _exec(self, files):
-        if self._password and self._password is True:
-            import getpass
-            # cache password for later use
-            self._password = getpass.getpass()
-
         cmd = self._get_command(
             host=self._host,
             user=self._user,
@@ -219,23 +214,25 @@ exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
 
 
 def exec_postgres(cmd, filename, password=None, debug=False):
-    # psql tool will read the password from the system environment
     if debug:
-        _debug("%s -f %s" % (cmd, filename))
+        if password:
+            _debug("PGPASSWORD=%s %s -f %s" % (password, cmd, filename))
+        else:
+            _debug("%s -f %s" % (cmd, filename))
         return 0
     env_password = None
     if password:
-        # backup any existing password
-        env_password = subprocess.check_output(['echo', '$PGPASSWORD'])
-        subprocess.call(['export', 'PGPASSWORD=' + password])
+        if 'PGPASSWORD' in os.environ:
+            env_password = os.environ['PGPASSWORD']
+        os.environ['PGPASSWORD'] = password
     try:
-        return subprocess.call(cmd.split() + ['-f', filename])
+        retcode = subprocess.call(cmd.split() + ['-f', filename])
     finally:
         if env_password:
-            # restore password
-            subprocess.call(['export', 'PGPASSWORD=' + env_password])
-        else:
-            subprocess.call(['unset', 'PGPASSWORD'])
+            os.environ['PGPASSWORD'] = env_password
+        elif password:
+            del os.environ['PGPASSWORD']
+    return retcode
 
 
 def main():
@@ -260,9 +257,8 @@ def main():
                              "\"create\" command")
     parser.add_argument("-u", dest="user", default=login_name,
                         help="database user name (default: \"%s\")" % login_name)
-    parser.add_argument("-p", dest="password", action='store_true', default=False,
-                        help="prompt for database password. "
-                             "if not supplied assumes no password unless read from config.")
+    parser.add_argument("-p", dest="password", default='',
+                        help="database password.")
     parser.add_argument("--host", default="localhost",
                         help='database server host (default: "localhost")')
     parser.add_argument("--port",
