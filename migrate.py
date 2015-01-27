@@ -110,7 +110,10 @@ class Migrate(object):
         for s in ('up', 'down'):
             file_path = "%s.%s.sql" % (filename, s)
             with open(os.path.join(full_rev_path, file_path), 'a+') as w:
-                w.write("-- %s: %s" % (s.upper(), self._message))
+                w.write('\n'.join([
+                    '-- *** %s ***' % s.upper(),
+                    '-- file: %s' % filename,
+                    '-- comment: %s' % self._message]))
                 self._log(0, file_path)
 
     def _cmd_up(self):
@@ -140,7 +143,7 @@ class Migrate(object):
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.down.sql"))
             sql_files.sort(reverse=True)
             self._exec(sql_files)
-            self._log(0, "down: downgraded revision %s" % rev)
+            self._log(0, "done: downgraded revision %s" % rev)
 
     def _cmd_refresh(self):
         """Downgrade and re-run revisions
