@@ -9,7 +9,7 @@
     :license: MIT
 """
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 import os
 import sys
@@ -272,11 +272,11 @@ def main():
     parser.add_argument("--path", default=migration_path,
                         help="path to the migration folder either absolute or relative to the "
                              "current directory. (default: \"./migrations\")")
-    parser.add_argument("-f", dest='file', metavar='CONFIG', default="\".migrate\"",
+    parser.add_argument("-f", dest='file', metavar='CONFIG', default=".migrate",
                         help="configuration file in \".ini\" format. "
                              "Sections represent different configuration environments. "
-                             "Keys include (migration_path, user, password, host, port, "
-                             "database, engine)")
+                             "Keys include: migration_path, user, password, host, port, "
+                             "database, and engine. (default: \".migrate\")")
     parser.add_argument("--env", default='dev',
                         help="configuration environment. applies only to config file option "
                              "(default: \"dev\")")
