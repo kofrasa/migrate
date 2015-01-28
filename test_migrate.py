@@ -89,8 +89,9 @@ class MigrateTestCase(unittest.TestCase):
                 'migration_path = %s' % self.config['path'],
                 'engine = sqlite3',
                 'database = %s' % self.config['database']]))
-        self.config = {'file': filename, 'env': 'test'}
-        # will perform: create -> up -> down -> up
+        # other tests use values from config dict
+        self.config['file'] = filename
+        self.config['env'] = 'test'
         self.test_refresh_command()
 
 

@@ -9,7 +9,7 @@
     :license: MIT
 """
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 import os
 import sys
@@ -21,7 +21,7 @@ from datetime import datetime
 
 
 COMMANDS = {
-    'postgres': "psql --host {host} --port {port} --username {user} -d {database}",
+    'postgres': "psql -w --host {host} --port {port} --username {user} -d {database}",
     'mysql': "mysql --host {host} --port {port} --user {user} -D {database}",
     'sqlite3': "sqlite3 {database}"
 }
@@ -33,22 +33,24 @@ class Migrate(object):
     """
 
     def __init__(self, config):
-        if config.get('file'):
-            # read ini configuration
-            parser = ConfigParser()
-            parser.read(config['file'])
-            env = config.get('env', 'dev')
-            for name in ('engine', 'user', 'password', 'migration_path',
-                         'host', 'port', 'database', 'verbose'):
-                if parser.has_option(env, name):
-                    value = parser.get(env, name)
-                    if not value:
-                        continue
-                    if name == 'migration_path':
-                        config['path'] = value
-                    else:
-                        config[name] = value
-        # assign configuration
+        config = config.copy()
+        if 'file' in config:
+            filename = config['file']
+            if os.path.isfile(filename):
+                parser = ConfigParser()
+                parser.read(filename)
+                env = config.get('env', 'dev')
+                for name in ('engine', 'user', 'password', 'migration_path',
+                             'host', 'port', 'database', 'verbose'):
+                    if parser.has_option(env, name):
+                        value = parser.get(env, name)
+                        if name == 'migration_path':
+                            config['path'] = value
+                        if value is not None:
+                            config[name] = value
+            elif filename != '.migrate':
+                raise Exception("Couldn't find configuration file: %s" % filename)
+        # assign configuration for easy lookup
         self._migration_path = os.path.abspath(config.get('path'))
         self._host = config.get('host')
         self._port = config.get('port')
@@ -60,7 +62,7 @@ class Migrate(object):
         self._message = config.get('message')
         self._engine = config.get('engine')
         self._verbose = int(config.get('verbose', '0'))
-        self._debug = bool(config.get('debug', False))
+        self._debug = bool(int(config.get('debug', False)))
         if self._rev:
             assert self._rev.isdigit(), "Revision must be a valid integer"
 
@@ -269,11 +271,11 @@ def main():
     parser.add_argument("--path", default=migration_path,
                         help="path to the migration folder either absolute or relative to the "
                              "current directory. (default: \"./migrations\")")
-    parser.add_argument("-f", dest='file', metavar='CONFIG',
+    parser.add_argument("-f", dest='file', metavar='CONFIG', default=".migrate",
                         help="configuration file in \".ini\" format. "
                              "Sections represent different configuration environments. "
-                             "Keys include (migration_path, user, password, host, port, "
-                             "database, engine)")
+                             "Keys include: migration_path, user, password, host, port, "
+                             "database, and engine. (default: \".migrate\")")
     parser.add_argument("--env", default='dev',
                         help="configuration environment. applies only to config file option "
                              "(default: \"dev\")")
