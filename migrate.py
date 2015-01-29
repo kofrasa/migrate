@@ -110,11 +110,11 @@ class Migrate(object):
         # create the migration files
         self._log(0, "creating files: ")
         for s in ('up', 'down'):
-            file_path = "%s.%s.sql" % (filename, s)
-            with open(os.path.join(full_rev_path, file_path), 'a+') as w:
+            file_path = os.path.join(full_rev_path, "%s.%s.sql" % (filename, s))
+            with open(file_path, 'a+') as w:
                 w.write('\n'.join([
                     '-- *** %s ***' % s.upper(),
-                    '-- file: %s' % filename,
+                    '-- file: %s' % os.path.relpath(file_path),
                     '-- comment: %s' % self._message]))
                 self._log(0, file_path)
 
