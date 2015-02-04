@@ -70,9 +70,9 @@ class MigrateTestCase(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             self.assertEqual(e.returncode, 1, "failed to rollback database")
 
-    def test_refresh_command(self):
+    def test_reset_command(self):
         self.test_up_command()
-        self.config['command'] = 'refresh'
+        self.config['command'] = 'reset'
         Migrate(self.config).run()
         subprocess.check_call(["sqlite3", self.config['database'],
                                "insert into users values (1, 'francis', 'kofrasa@gmail.com');"])
@@ -92,7 +92,7 @@ class MigrateTestCase(unittest.TestCase):
         # other tests use values from config dict
         self.config['file'] = filename
         self.config['env'] = 'test'
-        self.test_refresh_command()
+        self.test_reset_command()
 
 
 if __name__ == '__main__':

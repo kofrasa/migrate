@@ -10,6 +10,7 @@
 """
 
 __version__ = '0.3.2'
+__all__ = ['Migrate']
 
 import os
 import sys
@@ -114,7 +115,7 @@ class Migrate(object):
             with open(file_path, 'a+') as w:
                 w.write('\n'.join([
                     '-- *** %s ***' % s.upper(),
-                    '-- file: %s' % os.path.relpath(file_path),
+                    '-- file: %s' % os.path.join(rev_folder, filename),
                     '-- comment: %s' % self._message]))
                 self._log(0, file_path)
 
@@ -147,7 +148,7 @@ class Migrate(object):
             self._exec(sql_files)
             self._log(0, "done: downgraded revision %s" % rev)
 
-    def _cmd_refresh(self):
+    def _cmd_reset(self):
         """Downgrade and re-run revisions
         """
         self._cmd_down()
@@ -192,7 +193,7 @@ class Migrate(object):
                 'create': lambda: self._cmd_create(),
                 'up': lambda: self._cmd_up(),
                 'down': lambda: self._cmd_down(),
-                'refresh': lambda: self._cmd_refresh()
+                'reset': lambda: self._cmd_reset()
             }.get(self._command)()
         except Exception as e:
             print >> sys.stderr, str(e)
@@ -246,7 +247,7 @@ def main():
         description="A simple generic database migration tool using SQL scripts",
         usage="%(prog)s [options] <command> ")
     parser.add_argument(dest='command', default='create',
-                        choices=('create', 'up', 'down', 'refresh'),
+                        choices=('create', 'up', 'down', 'reset'),
                         help='command (default: "create")')
     parser.add_argument("-e", dest="engine", default='sqlite3',
                         choices=('postgres', 'mysql', 'sqlite3'),
