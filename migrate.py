@@ -16,6 +16,7 @@ import os
 import sys
 import argparse
 import glob
+import string
 import subprocess
 from ConfigParser import ConfigParser
 from datetime import datetime
@@ -33,39 +34,21 @@ class Migrate(object):
     """A simple generic database migration helper
     """
 
-    def __init__(self, config):
-        config = config.copy()
-        if 'file' in config:
-            filename = config['file']
-            if os.path.isfile(filename):
-                parser = ConfigParser()
-                parser.read(filename)
-                env = config.get('env', 'dev')
-                for name in ('engine', 'user', 'password', 'migration_path',
-                             'host', 'port', 'database', 'verbose'):
-                    if parser.has_option(env, name):
-                        value = parser.get(env, name)
-                        if name == 'migration_path':
-                            config['path'] = value
-                        if value is not None:
-                            config[name] = value
-            elif filename != '.migrate':
-                raise Exception("Couldn't find configuration file: %s" % filename)
+    def __init__(self, path='./migrations', host=None, port=None, user=None, password=None, database=None,
+                 rev=None, command=None, message=None, engine=None, verbose=0, debug=False, **kwargs):
         # assign configuration for easy lookup
-        self._migration_path = os.path.abspath(config.get('path'))
-        self._host = config.get('host')
-        self._port = config.get('port')
-        self._user = config.get('user')
-        self._password = config.get('password')
-        self._database = config.get('database')
-        self._rev = config.get('rev')
-        self._command = config.get('command')
-        self._message = config.get('message')
-        self._engine = config.get('engine')
-        self._verbose = int(config.get('verbose', '0'))
-        self._debug = bool(int(config.get('debug', False)))
-        if self._rev:
-            assert self._rev.isdigit(), "Revision must be a valid integer"
+        self._migration_path = os.path.abspath(path)
+        self._host = host
+        self._port = port
+        self._user = user
+        self._password = password
+        self._database = database
+        self._rev = rev
+        self._command = command
+        self._message = message
+        self._engine = engine
+        self._verbose = verbose
+        self._debug = debug
 
         assert os.path.exists(self._migration_path) and os.path.isdir(self._migration_path), \
             "migration folder does not exist: %s" % self._migration_path
@@ -104,10 +87,13 @@ class Migrate(object):
                 os.mkdir(full_rev_path)
                 self._revisions.append(rev_folder)
 
-        # format file name with sleep to space out timestamps
-        filename = "%s.%s" % (
-            datetime.utcnow().strftime("%Y%m%d%H%M%S"),
-            '-'.join([s.lower() for s in self._message.split(' ') if s.strip()]))
+        # format file name
+        filename = '_'.join([s.lower() for s in self._message.split(' ') if s.strip()])
+        for p in string.punctuation:
+            if p in filename:
+                filename = filename.replace(p, '_')
+        filename = "%s_%s" % (datetime.utcnow().strftime("%Y%m%d%H%M%S"), filename.replace('__', '_'))
+
         # create the migration files
         self._log(0, "creating files: ")
         for s in ('up', 'down'):
@@ -199,7 +185,7 @@ class Migrate(object):
             print >> sys.stderr, str(e)
 
 
-def _debug(msg):
+def print_debug(msg):
     print "[debug] %s" % msg
 
 
@@ -207,7 +193,7 @@ def exec_mysql(cmd, filename, password=None, debug=False):
     if password:
         cmd = cmd + ' -p' + password
     if debug:
-        _debug("%s < %s" % (cmd, filename))
+        print_debug("%s < %s" % (cmd, filename))
         return 0
     with open(filename) as f:
         return subprocess.call(cmd.split(), stdin=f)
@@ -219,9 +205,9 @@ exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
 def exec_postgres(cmd, filename, password=None, debug=False):
     if debug:
         if password:
-            _debug("PGPASSWORD=%s %s -f %s" % (password, cmd, filename))
+            print_debug("PGPASSWORD=%s %s -f %s" % (password, cmd, filename))
         else:
-            _debug("%s -f %s" % (cmd, filename))
+            print_debug("%s -f %s" % (cmd, filename))
         return 0
     env_password = None
     if password:
@@ -295,7 +281,22 @@ def main():
         config[name] = getattr(args, name)
 
     try:
-        Migrate(config).run()
+        if 'file' in config:
+            if os.path.isfile(config['file']):
+                parser = ConfigParser()
+                parser.read(config['file'])
+                env = config.get('env', 'dev')
+                for name in ('engine', 'user', 'password', 'migration_path',
+                             'host', 'port', 'database', 'verbose'):
+                    if parser.has_option(env, name):
+                        value = parser.get(env, name)
+                        if name == 'migration_path':
+                            config['path'] = value
+                        if value is not None:
+                            config[name] = value
+            elif config['file'] != '.migrate':
+                raise Exception("Couldn't find configuration file: %s" % config['file'])
+        Migrate(**config).run()
     except Exception as e:
         print >> sys.stderr, str(e)
         parser.print_usage(sys.stderr)
