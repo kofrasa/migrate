@@ -44,7 +44,7 @@ $ ls -R migrations/
 1
 
 migrations//1:
-20141215134002.create-users-table.down.sql	20141215134002.create-users-table.up.sql
+20141215134002_create_users_table.down.sql	20141215134002_create_users_table.up.sql
 ```
 
 upgrading from current revision
@@ -76,6 +76,9 @@ execute with configuration for a particular revision using a preferred environme
 ```sh
 $ migrate reset -f config.ini --env prod
 ```
+
+you can also store default configuration in a **.migrate** file in the 
+current directory where ```migrate``` is run from
 
 ## commands
 | Command  | Description  |
