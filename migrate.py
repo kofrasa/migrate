@@ -268,7 +268,7 @@ def main(args):
     parser.add_argument("--debug", action='store_true', default=False,
                         help="print the commands but does not execute.")
     parser.add_argument("--skip-errors", default=False, action='store_true',
-                        help="Continue migration even when some scripts in the sequence fail")
+                        help="Continue migration even when some scripts in a revision fail")
     parser.add_argument("-v", dest="verbose", action='count', default=0,
                         help="show verbose output.")
     parser.add_argument('-V', '--version', action='version',
