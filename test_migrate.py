@@ -26,7 +26,7 @@ class MigrateTestCase(unittest.TestCase):
         # need SQL commands so sqlite3 database file can be created
         sql = (
             """CREATE TABLE users (
-              id INT PRIMARY KEY ,
+              id INTEGER PRIMARY KEY ,
               name TEXT,
               email TEXT
             );
@@ -55,7 +55,7 @@ class MigrateTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(self.config['database']), 'no database file was created')
         # insert some data to confirm that scripts were applied
         subprocess.check_call(["sqlite3", self.config['database'],
-                               "INSERT INTO users VALUES (1, 'francis', 'kofrasa@gmail.com');"])
+                               "INSERT INTO users VALUES (NULL, 'francis', 'kofrasa@gmail.com');"])
         # query for inserted data
         res = subprocess.check_output(["sqlite3", self.config['database'],
                                        "SELECT COUNT(*) FROM users"])
@@ -75,10 +75,9 @@ class MigrateTestCase(unittest.TestCase):
         self.config['command'] = 'reset'
         Migrate(**self.config).run()
         subprocess.check_call(["sqlite3", self.config['database'],
-                               "INSERT INTO users VALUES (1, 'francis', 'kofrasa@gmail.com');"])
+                               "INSERT INTO users VALUES (NULL, 'francis', 'kofrasa@gmail.com')"])
         # query for inserted data
-        res = subprocess.check_output(["sqlite3", self.config['database'],
-                                       "SELECT COUNT(*) FROM users"])
+        res = subprocess.check_output(["sqlite3", self.config['database'], "SELECT COUNT(*) FROM users"])
         self.assertEqual(int(res.strip()), 1, "failed to apply migration scripts")
 
     def test_config_file(self):
@@ -89,10 +88,8 @@ class MigrateTestCase(unittest.TestCase):
                 'migration_path = %s' % self.config['path'],
                 'engine = sqlite3',
                 'database = %s' % self.config['database']]))
-        # other tests use values from config dict
-        self.config['file'] = filename
-        self.config['env'] = 'test'
-        self.test_reset_command()
+        import migrate
+        migrate.main(['-f', filename, '--env', 'test', 'reset'])
 
 
 if __name__ == '__main__':

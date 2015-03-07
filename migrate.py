@@ -18,6 +18,7 @@ import argparse
 import glob
 import string
 import subprocess
+import tempfile
 from ConfigParser import ConfigParser
 from datetime import datetime
 
@@ -35,7 +36,8 @@ class Migrate(object):
     """
 
     def __init__(self, path='./migrations', host=None, port=None, user=None, password=None, database=None,
-                 rev=None, command=None, message=None, engine=None, verbose=0, debug=False, **kwargs):
+                 rev=None, command=None, message=None, engine=None, verbose=0, debug=False,
+                 skip_errors=False, **kwargs):
         # assign configuration for easy lookup
         self._migration_path = os.path.abspath(path)
         self._host = host
@@ -49,6 +51,7 @@ class Migrate(object):
         self._engine = engine
         self._verbose = verbose
         self._debug = debug
+        self._skip_errors = skip_errors
 
         assert os.path.exists(self._migration_path) and os.path.isdir(self._migration_path), \
             "migration folder does not exist: %s" % self._migration_path
@@ -60,8 +63,7 @@ class Migrate(object):
         os.chdir(current_dir)
 
     def _log(self, level, msg):
-        """Simple logging for the given verbosity level
-        """
+        """Simple logging for the given verbosity level"""
         if self._verbose >= level:
             print msg
 
@@ -70,7 +72,6 @@ class Migrate(object):
         """
         assert self._message, "need to supply a message for the \"create\" command"
         if not self._revisions:
-            # we start from revision 1
             self._revisions.append("1")
 
         # get the migration folder
@@ -106,8 +107,7 @@ class Migrate(object):
                 self._log(0, file_path)
 
     def _cmd_up(self):
-        """Upgrade to a revision
-        """
+        """Upgrade to a revision"""
         revision = self._get_revision()
         if not self._rev:
             self._log(0, "upgrading current revision")
@@ -120,8 +120,7 @@ class Migrate(object):
             self._log(0, "done: upgraded revision %s" % rev)
 
     def _cmd_down(self):
-        """Downgrade to a revision
-        """
+        """Downgrade to a revision"""
         revision = self._get_revision()
         if not self._rev:
             self._log(0, "downgrading current revision")
@@ -135,8 +134,7 @@ class Migrate(object):
             self._log(0, "done: downgraded revision %s" % rev)
 
     def _cmd_reset(self):
-        """Downgrade and re-run revisions
-        """
+        """Downgrade and re-run revisions"""
         self._cmd_down()
         self._cmd_up()
 
@@ -150,39 +148,35 @@ class Migrate(object):
         return revision
 
     def _get_command(self, **kwargs):
-        return COMMANDS[self._engine].format(**kwargs) if kwargs else \
-            COMMANDS[self._engine].split()[0]
-
-    def _exec(self, files):
-        cmd = self._get_command(
+        return COMMANDS[self._engine].format(
             host=self._host,
             user=self._user,
             database=self._database,
             port=self._port or PORTS.get(self._engine, None))
 
+    def _exec(self, files):
+        cmd = self._get_command()
         func = globals()["exec_%s" % self._engine]
-        try:
-            assert callable(func), "no exec function found for " + self._engine
-            for f in files:
-                self._log(1, "applying: %s" % os.path.basename(f))
+        assert callable(func), "no exec function found for " + self._engine
+        for f in files:
+            self._log(1, "applying: %s" % os.path.basename(f))
+            try:
                 func(cmd, f, self._password, self._debug)
-        except Exception as e:
-            print >> sys.stderr, str(e)
+            except subprocess.CalledProcessError as e:
+                if not self._skip_errors:
+                    raise e
 
     def run(self):
-        try:
-            # check for availability of target command line tool
-            cmd_name = self._get_command()
-            cmd_path = subprocess.check_output(["which", cmd_name]).strip()
-            assert os.path.exists(cmd_path), "no %s command found on path" % cmd_name
-            {
-                'create': lambda: self._cmd_create(),
-                'up': lambda: self._cmd_up(),
-                'down': lambda: self._cmd_down(),
-                'reset': lambda: self._cmd_reset()
-            }.get(self._command)()
-        except Exception as e:
-            print >> sys.stderr, str(e)
+        # check for availability of target command line tool
+        cmd_name = self._get_command().split()[0]
+        cmd_path = subprocess.check_output(["which", cmd_name]).strip()
+        assert os.path.exists(cmd_path), "no %s command found on path" % cmd_name
+        {
+            'create': lambda: self._cmd_create(),
+            'up': lambda: self._cmd_up(),
+            'down': lambda: self._cmd_down(),
+            'reset': lambda: self._cmd_reset()
+        }.get(self._command)()
 
 
 def print_debug(msg):
@@ -194,9 +188,8 @@ def exec_mysql(cmd, filename, password=None, debug=False):
         cmd = cmd + ' -p' + password
     if debug:
         print_debug("%s < %s" % (cmd, filename))
-        return 0
     with open(filename) as f:
-        return subprocess.call(cmd.split(), stdin=f)
+        subprocess.check_call(cmd.split(), stdin=f)
 
 # reuse :)
 exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
@@ -214,17 +207,23 @@ def exec_postgres(cmd, filename, password=None, debug=False):
         if 'PGPASSWORD' in os.environ:
             env_password = os.environ['PGPASSWORD']
         os.environ['PGPASSWORD'] = password
+    # for Postgres exit status for bad file input is 0, so we use temporary file to detect errors
+    err_filename = tempfile.mktemp()
     try:
-        retcode = subprocess.call(cmd.split() + ['-f', filename])
+        subprocess.check_call(cmd.split() + ['-f', filename], stderr=open(err_filename, 'w'))
     finally:
         if env_password:
             os.environ['PGPASSWORD'] = env_password
         elif password:
             del os.environ['PGPASSWORD']
-    return retcode
+        with open(err_filename, 'r') as fd:
+            stat = os.fstat(fd.fileno())
+            if stat.st_size:
+                raise subprocess.CalledProcessError(1, ''.join(fd.readlines()))
+        os.remove(err_filename)
 
 
-def main():
+def main(args):
     login_name = os.getlogin()
     migration_path = os.path.join(os.getcwd(), "migrations")
 
@@ -232,9 +231,9 @@ def main():
         prog=os.path.split(__file__)[1],
         description="A simple generic database migration tool using SQL scripts",
         usage="%(prog)s [options] <command> ")
-    parser.add_argument(dest='command', default='create',
+    parser.add_argument(dest='command', default='up',
                         choices=('create', 'up', 'down', 'reset'),
-                        help='command (default: "create")')
+                        help='command action to take')
     parser.add_argument("-e", dest="engine", default='sqlite3',
                         choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
@@ -268,6 +267,8 @@ def main():
                              "(default: \"dev\")")
     parser.add_argument("--debug", action='store_true', default=False,
                         help="print the commands but does not execute.")
+    parser.add_argument("--skip-errors", default=False, action='store_true',
+                        help="Continue migration even when some scripts in the sequence fail")
     parser.add_argument("-v", dest="verbose", action='count', default=0,
                         help="show verbose output.")
     parser.add_argument('-V', '--version', action='version',
@@ -275,21 +276,21 @@ def main():
                         help="print version information and exit")
 
     config = {}
-    args = parser.parse_args()
-    for name in ('engine', 'command', 'rev', 'password', 'user', 'path', 'env',
+    args = parser.parse_args(args=args)
+    for name in ('engine', 'command', 'rev', 'password', 'user', 'path', 'env', 'skip_errors',
                  'host', 'port', 'database', 'file', 'message', 'verbose', 'debug'):
         config[name] = getattr(args, name)
 
     try:
         if 'file' in config:
             if os.path.isfile(config['file']):
-                parser = ConfigParser()
-                parser.read(config['file'])
+                cfg = ConfigParser()
+                cfg.read(config['file'])
                 env = config.get('env', 'dev')
                 for name in ('engine', 'user', 'password', 'migration_path',
                              'host', 'port', 'database', 'verbose'):
-                    if parser.has_option(env, name):
-                        value = parser.get(env, name)
+                    if cfg.has_option(env, name):
+                        value = cfg.get(env, name)
                         if name == 'migration_path':
                             config['path'] = value
                         if value is not None:
@@ -303,4 +304,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

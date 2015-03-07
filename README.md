@@ -83,7 +83,7 @@ $ migrate reset -f config.ini --env prod
 | create   | Create a migration. Specify "-r 0" to add a new revision |
 | up       | Upgrade the latest revision  |
 | down     | Downgrade the last or to the target revision |
-| reset    | Re-run the last or specified revision |
+| reset    | Rollback and re-run the last or specified revision |
 
 
 ## license
