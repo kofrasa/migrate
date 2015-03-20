@@ -19,7 +19,7 @@ setup(
     author_email='kofrasa@gmail.com',
     url='https://github.com/kofrasa/migrate',
     description=__doc__,
-    long_description=read_file('README.md'),
+    long_description=read_file('README.rst'),
     py_modules=['migrate'],
     include_package_data=True,
     zip_safe=False,
