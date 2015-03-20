@@ -1,15 +1,15 @@
-.PHONY: install uninstall test clean
-
-PREFIX ?= /usr/local
 
 install:
-	@cp -f migrate.py $(PREFIX)/bin/migrate
+	@python setup.py install
+	@make clean
 
 uninstall:
-	@rm -f $(PREFIX)/bin/migrate
+	@pip uninstall migrate
 
 test:
 	@python -m unittest -v test_migrate > /dev/null
 
 clean:
-	@rm -fr *.pyc
+	@rm -fr *.pyc build dist migrate.egg-info
+
+.PHONY: install uninstall test clean

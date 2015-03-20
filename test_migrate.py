@@ -89,7 +89,7 @@ class MigrateTestCase(unittest.TestCase):
                 'engine = sqlite3',
                 'database = %s' % self.config['database']]))
         import migrate
-        migrate.main(['-f', filename, '--env', 'test', 'reset'])
+        migrate.main('-f', filename, '--env', 'test', 'reset')
 
 
 if __name__ == '__main__':

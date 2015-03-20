@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
     migrate
@@ -9,8 +8,8 @@
     :license: MIT
 """
 
-__version__ = '0.3.3'
-__all__ = ['Migrate']
+__version__ = '0.3.4'
+__all__ = ['Migrate', 'MigrateException']
 
 import os
 import sys
@@ -30,6 +29,9 @@ COMMANDS = {
 }
 PORTS = dict(postgres=5432, mysql=3306)
 
+
+class MigrateException(Exception):
+    pass
 
 class Migrate(object):
     """A simple generic database migration helper
@@ -162,7 +164,7 @@ class Migrate(object):
             self._log(1, "applying: %s" % os.path.basename(f))
             try:
                 func(cmd, f, self._password, self._debug)
-            except subprocess.CalledProcessError as e:
+            except MigrateException as e:
                 if not self._skip_errors:
                     raise e
 
@@ -219,16 +221,20 @@ def exec_postgres(cmd, filename, password=None, debug=False):
         with open(err_filename, 'r') as fd:
             stat = os.fstat(fd.fileno())
             if stat.st_size:
-                raise subprocess.CalledProcessError(1, ''.join(fd.readlines()))
+                raise MigrateException(''.join(fd.readlines()))
         os.remove(err_filename)
 
 
-def main(args):
+def main(*args):
+    # allow flexibility for testing
+    args = args or sys.argv[1:]
+
     login_name = os.getlogin()
     migration_path = os.path.join(os.getcwd(), "migrations")
+    program = os.path.splitext(os.path.split(__file__)[1])[0]
 
     parser = argparse.ArgumentParser(
-        prog=os.path.split(__file__)[1],
+        prog=program,
         description="A simple generic database migration tool using SQL scripts",
         usage="%(prog)s [options] <command> ")
     parser.add_argument(dest='command', default='up',
@@ -298,10 +304,12 @@ def main(args):
             elif config['file'] != '.migrate':
                 raise Exception("Couldn't find configuration file: %s" % config['file'])
         Migrate(**config).run()
+    except MigrateException as e:
+        print >> sys.stderr, str(e)
     except Exception as e:
         print >> sys.stderr, str(e)
         parser.print_usage(sys.stderr)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()

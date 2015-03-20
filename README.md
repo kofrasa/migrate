@@ -76,6 +76,7 @@ execute with configuration for a particular revision using a preferred environme
 ```sh
 $ migrate reset -f config.ini --env prod
 ```
+you can put a _.migrate_ configuration file in INI format in your project directory to be used automatically
 
 you can also store default configuration in a **.migrate** file in the 
 current directory where ```migrate``` is run from
