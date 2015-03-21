@@ -29,6 +29,7 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
+        'Operating System :: POSIX',
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries',
         'Topic :: Database',
