@@ -7,6 +7,7 @@
     :copyright: (c) 2014 Francis Asante <kofrasa@gmail.com>
     :license: MIT
 """
+from __future__ import print_function
 
 __version__ = '0.3.5'
 __all__ = ['Migrate', 'MigrateException']
@@ -18,9 +19,12 @@ import glob
 import string
 import subprocess
 import tempfile
-from ConfigParser import ConfigParser
 from datetime import datetime
 
+try:
+    from ConfigParser import ConfigParser
+except:
+    from configparser import ConfigParser
 
 COMMANDS = {
     'postgres': "psql -w --host {host} --port {port} --username {user} -d {database}",
@@ -32,6 +36,7 @@ PORTS = dict(postgres=5432, mysql=3306)
 
 class MigrateException(Exception):
     pass
+
 
 class Migrate(object):
     """A simple generic database migration helper
@@ -60,14 +65,14 @@ class Migrate(object):
         current_dir = os.path.abspath(os.getcwd())
         os.chdir(self._migration_path)
         # cache ordered list of the names of all revision folders
-        self._revisions = map(str,
-                              sorted(map(int, filter(lambda x: x.isdigit(), glob.glob("*")))))
+        self._revisions = list(map(str,
+                                   sorted(map(int, filter(lambda x: x.isdigit(), glob.glob("*"))))))
         os.chdir(current_dir)
 
     def _log(self, level, msg):
         """Simple logging for the given verbosity level"""
         if self._verbose >= level:
-            print msg
+            print(msg)
 
     def _cmd_create(self):
         """Create a migration in the current or new revision folder
@@ -182,7 +187,7 @@ class Migrate(object):
 
 
 def print_debug(msg):
-    print "[debug] %s" % msg
+    print("[debug] %s" % msg)
 
 
 def exec_mysql(cmd, filename, password=None, debug=False):
@@ -305,9 +310,9 @@ def main(*args):
                 raise Exception("Couldn't find configuration file: %s" % config['file'])
         Migrate(**config).run()
     except MigrateException as e:
-        print >> sys.stderr, str(e)
+        print(str(e), file=sys.stderr)
     except Exception as e:
-        print >> sys.stderr, str(e)
+        print(str(e), file=sys.stderr)
         parser.print_usage(sys.stderr)
 
 

@@ -40,7 +40,7 @@ class MigrateTestCase(unittest.TestCase):
         # check that all folders have been created
         self.assertTrue(os.path.exists(rev_folder), "revision folder not created")
         # must create 2 files
-        self.assertEquals(len(glob.glob(os.path.join(rev_folder, '*'))), 2,
+        self.assertEqual(len(glob.glob(os.path.join(rev_folder, '*'))), 2,
                           "could not create migration files")
         # add some SQL
         for i, s in enumerate(('up', 'down')):
