@@ -25,13 +25,12 @@ setup(
     zip_safe=False,
     classifiers=[
         'Environment :: Console',
-        'Development Status :: Production/Stable',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Unix',
         'Programming Language :: Python',
-        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Software Development :: Libraries',
         'Topic :: Database',
         'Topic :: Utilities'
     ],
