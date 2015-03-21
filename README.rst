@@ -10,20 +10,25 @@ with extensions **.up.sql** and **.down.sql** for upgrading and downgrading the 
 install
 -------
 install from pip ::
+
     $ pip install migrate
 
 or clone and install ::
+
     $ git clone https://github.com/kofrasa/migrate.git
     $ cp migrate
     $ make install
 
 usage
 -----
-usage: migrate [options] <command>
+::
+
+    usage: migrate [options] <command>
 
 examples
 --------
 move into working directory and create default migrations folder ::
+
     $ cd /path/to/project
     $ mkdir migrations
 
@@ -31,6 +36,7 @@ creating migrations with sqlite3 ::
     $ migrate create -e sqlite3 -d /path/to/test.db -m "create users table"
 
 this generates the up and down files using the current timestamp and message in the current revision folder ::
+
     $ ls -R migrations/
     1
 
@@ -38,12 +44,15 @@ this generates the up and down files using the current timestamp and message in 
     20141215134002_create_users_table.down.sql	20141215134002_create_users_table.up.sql
 
 upgrading from current revision ::
+
     $ migrate up -e sqlite3 -d test.db
 
 rolling back current revision ::
+
     $ migrate down -e sqlite3 -d test.db
 
 running with sample configuration example: config.ini ::
+
     [dev]
     database = /path/to/test.db
     engine = sqlite3
@@ -57,25 +66,27 @@ running with sample configuration example: config.ini ::
     engine = mysql
 
 execute with configuration for a particular revision using a preferred environment ::
+
     $ migrate reset -f config.ini --env prod
 
 you can put a *.migrate* configuration file in INI format in your project directory to be used automatically
 
 commands
 --------
-=======  ===========
+=======  =========================================================
 Command  Description
-=======  ===========
+=======  =========================================================
 create   Create a migration. Specify "-r 0" to add a new revision
 up       Upgrade the latest revision
 down     Downgrade the last or to the target revision
 reset    Rollback and re-run the last or specified revision
-=====    ===========
+=======  =========================================================
 
 Any migration operation will stop when errors are encountered in any of the scripts. To ignore errors use the
 *--skip-errors* option.
 
 For more options ::
+
     $ migrate -h
 
 license
