@@ -73,14 +73,14 @@ you can put a *.migrate* configuration file in INI format in your project direct
 
 commands
 --------
-=======  =========================================================
+=======  ========================================================
 Command  Description
-=======  =========================================================
+=======  ========================================================
 create   Create a migration. Specify "-r 0" to add a new revision
 up       Upgrade the latest revision
 down     Downgrade the last or to the target revision
 reset    Rollback and re-run the last or specified revision
-=======  =========================================================
+=======  ========================================================
 
 Any migration operation will stop when errors are encountered in any of the scripts. To ignore errors use the
 *--skip-errors* option.
