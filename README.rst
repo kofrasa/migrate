@@ -9,11 +9,11 @@ with extensions **.up.sql** and **.down.sql** for upgrading and downgrading the 
 
 install
 -------
-install from pip ::
+install with pip from test site. am still working on getting the name for the main site ::
 
-    $ pip install migrate
+    $ pip install migrate -i https://testpypi.python.org/pypi
 
-or clone and install ::
+or clone ::
 
     $ git clone https://github.com/kofrasa/migrate.git
     $ cp migrate
@@ -59,11 +59,11 @@ running with sample configuration example: config.ini ::
 
     [prod]
     migration_path = /path/to/prod/migrations
-    database = superdb
-    user = francis
-    password = sUP@^8
-    host = localhost
-    engine = mysql
+    database = DB_NAME
+    user = DB_USER
+    password = DB_PASSWORD
+    host = DB_HOST
+    engine = ENGINE
 
 execute with configuration for a particular revision using a preferred environment ::
 
@@ -73,14 +73,14 @@ you can put a *.migrate* configuration file in INI format in your project direct
 
 commands
 --------
-=======  ========================================================
+=======  ===========================================================
 Command  Description
-=======  ========================================================
-create   Create a migration. Specify "-r 0" to add a new revision
-up       Upgrade the latest revision
-down     Downgrade the last or to the target revision
-reset    Rollback and re-run the last or specified revision
-=======  ========================================================
+=======  ===========================================================
+create   Create a migration. Specify "--rev 0" to add a new revision
+up       Upgrade from a revision to the latest
+down     Downgrade from the latest to a lower revision
+reset    Rollback and re-run to the current revision
+=======  ===========================================================
 
 Any migration operation will stop when errors are encountered in any of the scripts. To ignore errors use the
 *--skip-errors* option.

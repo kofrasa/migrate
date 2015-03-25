@@ -43,7 +43,7 @@ class Migrate(object):
     """
 
     def __init__(self, path='./migrations', host=None, port=None, user=None, password=None, database=None,
-                 rev=None, command=None, message=None, engine=None, verbose=0, debug=False,
+                 rev=None, command=None, message=None, engine=None, verbose=False, debug=False,
                  skip_errors=False, **kwargs):
         # assign configuration for easy lookup
         self._migration_path = os.path.abspath(path)
@@ -56,7 +56,7 @@ class Migrate(object):
         self._command = command
         self._message = message
         self._engine = engine
-        self._verbose = verbose
+        self._verbose = int(verbose)
         self._debug = debug
         self._skip_errors = skip_errors
 
@@ -123,8 +123,8 @@ class Migrate(object):
         for rev in self._revisions[int(revision) - 1:]:
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.up.sql"))
             sql_files.sort()
-            self._exec(sql_files)
-            self._log(0, "done: upgraded revision %s" % rev)
+            self._exec(sql_files, rev)
+        self._log(0, "done: upgraded revision to %s\n" % rev)
 
     def _cmd_down(self):
         """Downgrade to a revision"""
@@ -137,8 +137,8 @@ class Migrate(object):
         for rev in reversed(self._revisions[int(revision) - 1:]):
             sql_files = glob.glob(os.path.join(self._migration_path, rev, "*.down.sql"))
             sql_files.sort(reverse=True)
-            self._exec(sql_files)
-            self._log(0, "done: downgraded revision %s" % rev)
+            self._exec(sql_files, rev)
+        self._log(0, "done: downgraded revision to %s" % rev)
 
     def _cmd_reset(self):
         """Downgrade and re-run revisions"""
@@ -161,12 +161,12 @@ class Migrate(object):
             database=self._database,
             port=self._port or PORTS.get(self._engine, None))
 
-    def _exec(self, files):
+    def _exec(self, files, rev=0):
         cmd = self._get_command()
         func = globals()["exec_%s" % self._engine]
         assert callable(func), "no exec function found for " + self._engine
         for f in files:
-            self._log(1, "applying: %s" % os.path.basename(f))
+            self._log(1, "applying: %s/%s" % (rev, os.path.basename(f)))
             try:
                 func(cmd, f, self._password, self._debug)
             except MigrateException as e:
@@ -196,7 +196,10 @@ def exec_mysql(cmd, filename, password=None, debug=False):
     if debug:
         print_debug("%s < %s" % (cmd, filename))
     with open(filename) as f:
-        subprocess.check_call(cmd.split(), stdin=f)
+        try:
+            return subprocess.check_call(cmd.split(), stdin=f)
+        except subprocess.CalledProcessError as e:
+            raise MigrateException(str(e))
 
 # reuse :)
 exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
@@ -217,7 +220,7 @@ def exec_postgres(cmd, filename, password=None, debug=False):
     # for Postgres exit status for bad file input is 0, so we use temporary file to detect errors
     err_filename = tempfile.mktemp()
     try:
-        subprocess.check_call(cmd.split() + ['-f', filename], stderr=open(err_filename, 'w'))
+        subprocess.check_call(cmd.split() + ['-f', filename], stdout=open(os.devnull), stderr=open(err_filename, 'w'))
     finally:
         if env_password:
             os.environ['PGPASSWORD'] = env_password
@@ -240,28 +243,33 @@ def main(*args):
 
     parser = argparse.ArgumentParser(
         prog=program,
-        description="A simple generic database migration tool using SQL scripts",
-        usage="%(prog)s [options] <command> ")
-    parser.add_argument(dest='command', default='up',
-                        choices=('create', 'up', 'down', 'reset'),
-                        help='command action to take')
-    parser.add_argument("-e", dest="engine", default='sqlite3',
-                        choices=('postgres', 'mysql', 'sqlite3'),
+        formatter_class=argparse.RawTextHelpFormatter,
+        version=__version__,
+        usage="""\
+%(prog)s [options] <command>
+
+A simple generic database migration tool using SQL scripts
+
+commands:
+  up        Upgrade from a revision to the latest
+  down      Downgrade from the latest to a lower revision
+  reset     Rollback and re-run to the current revision
+  create    Create a migration. Specify "-r 0" to add a new revision
+""")
+
+    parser.add_argument(dest='command', choices=('create', 'up', 'down', 'reset'))
+    parser.add_argument("-e", dest="engine", default='sqlite3', choices=('postgres', 'mysql', 'sqlite3'),
                         help="database engine (default: \"sqlite3\")")
     parser.add_argument("-r", dest="rev",
                         help="revision to use. specify \"0\" for the next revision if using the "
                              "\"create\" command. (default: last revision)")
     parser.add_argument("-m", dest="message",
-                        help="message description for migrations created with the "
-                             "\"create\" command")
+                        help="message description for migrations created with the \"create\" command")
     parser.add_argument("-u", dest="user", default=login_name,
                         help="database user name (default: \"%s\")" % login_name)
-    parser.add_argument("-p", dest="password", default='',
-                        help="database password.")
-    parser.add_argument("--host", default="localhost",
-                        help='database server host (default: "localhost")')
-    parser.add_argument("--port",
-                        help='server port (default: postgres=5432, mysql=3306)')
+    parser.add_argument("-p", dest="password", default='', help="database password.")
+    parser.add_argument("--host", default="localhost", help='database server host (default: "localhost")')
+    parser.add_argument("--port", help='server port (default: postgres=5432, mysql=3306)')
     parser.add_argument("-d", dest="database", default=login_name,
                         help="database name to use. specify a /path/to/file if using sqlite3. "
                              "(default: login name)")
@@ -270,8 +278,8 @@ def main(*args):
                              "current directory. (default: \"./migrations\")")
     parser.add_argument("-f", dest='file', metavar='CONFIG', default=".migrate",
                         help="configuration file in \".ini\" format. "
-                             "Sections represent different configuration environments. "
-                             "Keys include: migration_path, user, password, host, port, "
+                             "sections represent different configuration environments.\n"
+                             "keys include: migration_path, user, password, host, port, "
                              "database, and engine. (default: \".migrate\")")
     parser.add_argument("--env", default='dev',
                         help="configuration environment. applies only to config file option "
@@ -279,12 +287,8 @@ def main(*args):
     parser.add_argument("--debug", action='store_true', default=False,
                         help="print the commands but does not execute.")
     parser.add_argument("--skip-errors", default=False, action='store_true',
-                        help="Continue migration even when some scripts in a revision fail")
-    parser.add_argument("-v", dest="verbose", action='count', default=0,
-                        help="show verbose output.")
-    parser.add_argument('-V', '--version', action='version',
-                        version="%(prog)s " + __version__,
-                        help="print version information and exit")
+                        help="continue migration even when some scripts in a revision fail")
+    parser.add_argument("--verbose", dest="verbose", action='store_true', default=False, help="show verbose output.")
 
     config = {}
     args = parser.parse_args(args=args)

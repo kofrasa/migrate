@@ -5,5 +5,8 @@
 *.iws
 *.iml
 *.ipr
+*.egg
+*.egg-info
+dist
 migrations/
 tmp/
