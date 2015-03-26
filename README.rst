@@ -32,7 +32,8 @@ move into working directory and create default migrations folder ::
     $ cd /path/to/project
     $ mkdir migrations
 
-creating migrations with sqlite3 ::
+creating a migration ::
+
     $ migrate create -e sqlite3 -d /path/to/test.db -m "create users table"
 
 this generates the up and down files using the current timestamp and message in the current revision folder ::
