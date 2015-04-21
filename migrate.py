@@ -9,7 +9,7 @@
 """
 from __future__ import print_function
 
-__version__ = '0.3.6'
+__version__ = '0.3.7'
 __all__ = ['Migrate', 'MigrateException']
 
 import os

@@ -26,12 +26,6 @@ See Readme_
 import migrate
 from setuptools import setup
 
-
-def read_file(name):
-    with open(name, 'r') as f:
-        return f.read()
-
-
 setup(
     name='migrate',
     version=migrate.__version__,
