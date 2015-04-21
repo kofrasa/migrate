@@ -1,5 +1,26 @@
 """
-A simple generic database migration tool
+Language agnostic database migration tool
+
+migrate
+=======
+
+A simple language agnostic database migration tool
+
+install
+-------
+::
+
+    $ pip install migrate
+
+usage
+-----
+::
+
+    usage: migrate [options] <command>
+
+See Readme_
+
+.. _Readme: https://github.com/kofrasa/migrate/blob/master/README.md
 """
 
 import migrate
@@ -18,8 +39,8 @@ setup(
     author='Francis Asante',
     author_email='kofrasa@gmail.com',
     url='https://github.com/kofrasa/migrate',
-    description=__doc__,
-    long_description=read_file('README.rst'),
+    description="A simple language agnostic database migration tool",
+    long_description=__doc__,
     py_modules=['migrate'],
     include_package_data=True,
     zip_safe=False,

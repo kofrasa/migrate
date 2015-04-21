@@ -12,4 +12,7 @@ test:
 clean:
 	@rm -fr *.pyc build dist migrate.egg-info
 
+upload:
+	@python setup.py sdist upload -r pypi
+
 .PHONY: install uninstall test clean
