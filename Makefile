@@ -14,5 +14,6 @@ clean:
 
 upload:
 	@python setup.py sdist upload -r pypi
+	@make clean
 
 .PHONY: install uninstall test clean
