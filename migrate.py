@@ -19,6 +19,7 @@ import glob
 import string
 import subprocess
 import tempfile
+import pwd
 from datetime import datetime
 
 try:
@@ -237,7 +238,10 @@ def main(*args):
     # allow flexibility for testing
     args = args or sys.argv[1:]
 
-    login_name = os.getlogin()
+    try:
+        login_name = os.getlogin()
+    except FileNotFoundError:
+        login_name = pwd.getpwuid(os.getuid())[0]
     migration_path = os.path.join(os.getcwd(), "migrations")
     program = os.path.splitext(os.path.split(__file__)[1])[0]
 
