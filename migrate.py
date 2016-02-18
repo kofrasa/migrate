@@ -244,7 +244,6 @@ def main(*args):
     parser = argparse.ArgumentParser(
         prog=program,
         formatter_class=argparse.RawTextHelpFormatter,
-        version=__version__,
         usage="""\
 %(prog)s [options] <command>
 
