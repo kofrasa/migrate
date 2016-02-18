@@ -288,6 +288,7 @@ commands:
     parser.add_argument("--skip-errors", default=False, action='store_true',
                         help="continue migration even when some scripts in a revision fail")
     parser.add_argument("--verbose", dest="verbose", action='store_true', default=False, help="show verbose output.")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     config = {}
     args = parser.parse_args(args=args)
