@@ -19,7 +19,7 @@ import pwd
 from datetime import datetime
 
 __all__ = ['Migrate', 'MigrateException']
-__version__ = '0.3.7'
+__version__ = '0.3.8'
 
 try:
     from ConfigParser import ConfigParser
