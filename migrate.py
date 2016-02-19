@@ -8,10 +8,6 @@
     :license: MIT
 """
 from __future__ import print_function
-
-__version__ = '0.3.7'
-__all__ = ['Migrate', 'MigrateException']
-
 import os
 import sys
 import argparse
@@ -21,6 +17,9 @@ import subprocess
 import tempfile
 import pwd
 from datetime import datetime
+
+__all__ = ['Migrate', 'MigrateException']
+__version__ = '0.3.7'
 
 try:
     from ConfigParser import ConfigParser
@@ -203,7 +202,8 @@ def exec_mysql(cmd, filename, password=None, debug=False):
             raise MigrateException(str(e))
 
 # reuse :)
-exec_sqlite3 = lambda a, b, c, d: exec_mysql(a, b, None, d)
+def exec_sqlite3(cmd, filename, password=None, debug=False): 
+    exec_mysql(cmd, filename, password, debug)
 
 
 def exec_postgres(cmd, filename, password=None, debug=False):
