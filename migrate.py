@@ -15,7 +15,6 @@ import glob
 import string
 import subprocess
 import tempfile
-import pwd
 from datetime import datetime
 
 __all__ = ['Migrate', 'MigrateException']
@@ -25,6 +24,13 @@ try:
     from ConfigParser import ConfigParser
 except:
     from configparser import ConfigParser
+
+try:
+    import pwd
+
+    def get_login_name(): return pwd.getpwuid(os.getuid())[0]
+except ModuleNotFoundError:
+    def get_login_name(): return os.getlogin()
 
 COMMANDS = {
     'postgres': "psql -w --host {host} --port {port} --username {user} -d {database}",
@@ -238,7 +244,7 @@ def main(*args):
     # allow flexibility for testing
     args = args or sys.argv[1:]
 
-    login_name = pwd.getpwuid(os.getuid())[0]
+    login_name = get_login_name()
     migration_path = os.path.join(os.getcwd(), "migrations")
     program = os.path.splitext(os.path.split(__file__)[1])[0]
 
